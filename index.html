@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GravityBlocks</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>BlockFall</h1>
+  </header>
+
+  <main class="game-wrapper">
+    <div class="board">
+      <canvas id="gameBoard" width="800" height="600" aria-label="GravityBlocks canvas"></canvas>
+    </div>
+    <aside class="hud">
+      <div class="stat">
+        <span class="label">Score</span>
+        <span class="value" id="score">0</span>
+      </div>
+      <div class="stat">
+        <span class="label">Level</span>
+        <span class="value" id="level">1</span>
+      </div>
+      <div class="stat">
+        <span class="label">Lines</span>
+        <span class="value" id="lines">0</span>
+      </div>
+      <div class="stat">
+        <span class="label">High Score</span>
+        <span class="value" id="highScore">0</span>
+      </div>
+      <div class="stat mini-panels">
+        <div class="panel">
+          <span class="label">Hold</span>
+          <canvas id="holdCanvas" width="80" height="80" aria-label="Hold piece preview"></canvas>
+        </div>
+        <div class="panel">
+          <span class="label">Next</span>
+          <div id="nextQueue" class="next-queue" aria-label="Upcoming pieces"></div>
+        </div>
+      </div>
+      <div class="stat">
+        <span class="label">Power</span>
+        <div class="power" aria-label="Power meter">
+          <div class="bar" id="powerBar" style="width:0%"></div>
+        </div>
+        <div class="power-meta">
+          <span class="label">Bombs:</span>
+          <span class="value" id="bombs">0</span>
+        </div>
+      </div>
+      <button id="bombBtn" type="button" aria-label="Use Bomb">Bomb Row</button>
+      <button id="pauseBtn" type="button">Pause</button>
+      <button id="settingsBtn" type="button">Settings</button>
+      <button id="restartBtn" type="button">Restart</button>
+    </aside>
+  </main>
+
+  <div class="mobile-controls" aria-label="Mobile controls">
+    <div class="grid">
+      <button class="btn" id="btn-left" type="button">Left</button>
+      <button class="btn" id="btn-rotate" type="button">Rotate</button>
+      <button class="btn" id="btn-right" type="button">Right</button>
+      <button class="btn" id="btn-soft" type="button">Down</button>
+      <button class="btn" id="btn-hard" type="button">Drop</button>
+      <button class="btn" id="btn-bomb" type="button">Bomb</button>
+    </div>
+  </div>
+
+  <script src="js/game.js"></script>
+  <div id="pauseOverlay" hidden aria-hidden="true">
+    <div class="overlay-inner">
+      <h2>Paused</h2>
+      <p>Press P or Resume to continue.</p>
+      <button id="resumeBtn" type="button">Resume</button>
+    </div>
+  </div>
+  <div id="settingsPanel" hidden aria-hidden="true">
+    <div class="overlay-inner">
+      <h2>Settings</h2>
+      <label class="toggle"><input type="checkbox" id="toggleGhost" checked /> Ghost Piece</label>
+      <label class="toggle"><input type="checkbox" id="toggleSound" checked /> Sound Effects</label>
+      <label class="toggle"><input type="checkbox" id="toggleGrid" checked /> Grid Background</label>
+      <button id="closeSettings" type="button">Close</button>
+    </div>
+  </div>
+  
+</body>
+</html>
