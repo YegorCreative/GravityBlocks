@@ -1,15 +1,9 @@
 /**
- * Advanced BlockFall Game Engine
- * Features: piece queue (5), hold, SRS rotation, lock delay, DAS/ARR, combos, back-to-back, T-spins,
- * line clear animation, ghost toggle, sound effects, high score persistence, pause & settings, bomb/energy bonuses.
+ * BlockFall Advanced Engine (clean build)
+ * Features: queue(5), hold, SRS, lock delay, DAS/ARR, combos, back-to-back, T-spins,
+ * animated clears, ghost/grid/sound toggles, pause & settings, high score, bomb/energy.
  */
-(function () {
-  /**
-   * BlockFall Advanced Engine (clean build)
-   * Features: queue(5), hold, SRS, lock delay, DAS/ARR, combos, back-to-back, T-spins,
-   * animated clears, ghost/grid/sound toggles, pause & settings, high score, bomb/energy.
-   */
-  (function(){
+(function(){
     'use strict';
 
     // --- DOM refs ---
@@ -135,70 +129,7 @@
     function updateClearing(delta){ if(!state.clearing.length) return; for(const c of state.clearing) c.prog += delta/300; if(state.clearing.every(c=>c.prog>=1)) finalizeClears(); }
     let last=0; function loop(t=0){ const d=t-last; last=t; if(state.running && !state.paused){ state.dropCounter+=d; groundCheck(d); if(state.dropCounter>=state.dropInterval){ state.dropCounter=0; if(!move(0,1)) groundCheck(d); } lateral(d); updateClearing(d); } render(); requestAnimationFrame(loop); }
     updateSpeed(); fillQueue(); spawn(); updateHUD(); renderHoldNext(); requestAnimationFrame(loop);
-  })();
-    S: colorVar('--block-green', '#2bd36f'),
-    Z: colorVar('--block-red', '#ff5a5f'),
-    J: colorVar('--block-blue', '#4dabff'),
-    L: colorVar('--block-orange', '#ff9f43'),
-  };
-
-  // Board size
-  const COLS = 10;
-  const ROWS = 20;
-
-  // Timing / speed
-  const LEVEL_LINES = 10;
-  const BASE_DROP_MS = 1000;
-  const MIN_DROP_MS = 70;
-  updateSpeed(); fillQueue(); spawnPiece(); updateHUD(); renderHoldAndQueue(); requestAnimationFrame(loop);
-
-  })();
-    case 'Space': hardDrop(); break;
-    case 'ShiftLeft': case 'ShiftRight': case 'KeyH': holdSwap(); break;
-    case 'KeyB': case 'KeyC': useBomb(); break;
-    case 'KeyP': togglePause(); break;
-  }}
-  function keyUp(e){ switch(e.code){ case 'ArrowLeft': keyState.left=false; if(!keyState.right) state.dasDir=0; else { state.dasDir=1; state.dasTimer=0; } break; case 'ArrowRight': keyState.right=false; if(!keyState.left) state.dasDir=0; else { state.dasDir=-1; state.dasTimer=0; } break; case 'ArrowDown': keyState.down=false; break; }}
-  window.addEventListener('keydown', keyDown); window.addEventListener('keyup', keyUp);
-
-  function useBomb(){ if(!state.running||state.bombs<=0||state.paused) return; let bestRow=0,bestCount=-1; for(let y=0;y<ROWS;y++){ const count=state.grid[y].reduce((a,v)=>a+(v?1:0),0); if(count>bestCount){ bestCount=count; bestRow=y; } } state.grid.splice(bestRow,1); state.grid.unshift(Array(COLS).fill(0)); state.bombs--; play('clear'); updateHUD(); }
-  function bindButton(btn, fn, continuous=false){ if(!btn) return; let timer=null; const start=e=>{ e.preventDefault(); fn(); if(continuous) timer=setInterval(fn,120); }; const stop=()=>{ if(timer){ clearInterval(timer); timer=null; } }; btn.addEventListener('pointerdown',start); window.addEventListener('pointerup',stop); window.addEventListener('pointercancel',stop); btn.addEventListener('click', e=>e.preventDefault()); }
-  bindButton(btnLeft, ()=>tryMove(-1,0), true); bindButton(btnRight, ()=>tryMove(1,0), true); bindButton(btnRotate, ()=>rotate(1), false); bindButton(btnSoft, ()=>softDrop(), true); bindButton(btnHard, ()=>hardDrop(), false); bindButton(btnMobBomb, ()=>useBomb(), false);
-  if(btnBomb) btnBomb.addEventListener('click', ()=>useBomb());
-  if(btnRestart) btnRestart.addEventListener('click', ()=>resetGame());
-  if(btnPause) btnPause.addEventListener('click', ()=>togglePause()); if(resumeBtn) resumeBtn.addEventListener('click', ()=>togglePause(false));
-  if(btnSettings) btnSettings.addEventListener('click', ()=>toggleSettings(true)); if(closeSettingsBtn) closeSettingsBtn.addEventListener('click', ()=>toggleSettings(false));
-  if(chkGhost) chkGhost.addEventListener('change', ()=>{ state.ghostEnabled=chkGhost.checked; });
-  if(chkSound) chkSound.addEventListener('change', ()=>{ state.soundEnabled=chkSound.checked; });
-  if(chkGrid) chkGrid.addEventListener('change', ()=>{ state.gridEnabled=chkGrid.checked; });
-
-  function togglePause(force){ if(!state.running) return; if(typeof force==='boolean') state.paused=!force?false:true; else state.paused=!state.paused; pauseOverlay && (pauseOverlay.hidden=!state.paused); }
-  function toggleSettings(show){ settingsPanel && (settingsPanel.hidden=!show); }
-
-  function resetGame(){ state.grid=createMatrix(COLS,ROWS,0); state.score=0; state.lines=0; state.level=1; state.energy=0; state.bombs=0; state.combo=0; state.backToBack=false; state.queue=[]; state.hold=null; state.canHold=true; state.running=true; state.paused=false; state.clearing=[]; updateSpeed(); updateHUD(); spawnPiece(); }
-
-  // Game Loop
-  let lastTime=0; function loop(time=0){ const delta=time-lastTime; lastTime=time; if(state.running && !state.paused){ state.dropCounter+=delta; groundTick(delta); if(state.dropCounter>=state.dropInterval){ state.dropCounter=0; if(!tryMove(0,1)) groundTick(delta); } handleClearing(delta); handleLateral(delta); } drawBoard(); requestAnimationFrame(loop); }
-
-  function handleClearing(delta){ if(!state.clearing.length) return; for(const c of state.clearing){ c.progress += delta/300; } if(state.clearing.every(c=>c.progress>=1)) finalizeClears(); }
-
-  // Init
-  updateSpeed(); fillQueue(); spawnPiece(); updateHUD(); renderHoldAndQueue(); requestAnimationFrame(loop);
-
 })();
-
-  function createMatrix(cols, rows, fill = 0) {
-    return Array.from({ length: rows }, () => Array(cols).fill(fill));
-  }
-
-  // 7-bag generator
-  /**
-   * BlockFall Advanced Engine (clean build)
-   * Includes: queue (5), hold, SRS rotation, lock delay, DAS/ARR, combos, back-to-back, T-spins,
-   * line clear animation, ghost/grid/sound toggles, pause & settings, high score, bomb/energy.
-   */
-  (function(){
-    'use strict';
 
     // --- DOM ---
     const canvas = document.getElementById('gameBoard');
