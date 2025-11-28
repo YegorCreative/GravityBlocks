@@ -35,35 +35,41 @@
   <main class="game-wrapper">
     <div class="board">
       <div id="stage" aria-label="Scaled stage">
+        <div class="stage-ui" aria-hidden="false">
+          <div class="hud-top">
+            <div class="hud-item">
+              <span class="label">SCORE</span>
+              <span class="value" id="score">0</span>
+            </div>
+            <div class="hud-item">
+              <span class="label">LEVEL</span>
+              <span class="value" id="level">1</span>
+            </div>
+            <div class="hud-item">
+              <span class="label">LINES</span>
+              <span class="value" id="lines">0</span>
+            </div>
+          </div>
+          <div class="hud-side left">
+            <div class="side-panel">
+              <span class="label">HOLD</span>
+              <canvas id="holdCanvas" width="64" height="64" aria-label="Hold piece preview"></canvas>
+            </div>
+          </div>
+          <div class="hud-side right">
+            <div class="side-panel">
+              <span class="label">NEXT</span>
+              <div id="nextQueue" class="next-queue" aria-label="Upcoming pieces"></div>
+            </div>
+          </div>
+        </div>
         <canvas id="gameBoard" aria-label="GravityBlocks canvas"></canvas>
       </div>
     </div>
     <aside class="hud">
       <div class="stat">
-        <span class="label">Score</span>
-        <span class="value" id="score">0</span>
-      </div>
-      <div class="stat">
-        <span class="label">Level</span>
-        <span class="value" id="level">1</span>
-      </div>
-      <div class="stat">
-        <span class="label">Lines</span>
-        <span class="value" id="lines">0</span>
-      </div>
-      <div class="stat">
         <span class="label">High Score</span>
         <span class="value" id="highScore">0</span>
-      </div>
-      <div class="stat mini-panels">
-        <div class="panel">
-          <span class="label">Hold</span>
-          <canvas id="holdCanvas" width="80" height="80" aria-label="Hold piece preview"></canvas>
-        </div>
-        <div class="panel">
-          <span class="label">Next</span>
-          <div id="nextQueue" class="next-queue" aria-label="Upcoming pieces"></div>
-        </div>
       </div>
       <div class="stat">
         <span class="label">Power</span>

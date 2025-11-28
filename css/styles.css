@@ -96,6 +96,7 @@ header h1 {
   border: 12px solid #2a2a2a;
   box-shadow: 0 0 0 2px #3a3a3a inset, 0 18px 60px rgba(0,0,0,0.6);
   border-radius: 6px;
+  position: relative;
 }
 
 /* Canvas */
@@ -111,6 +112,37 @@ canvas#gameBoard {
   height: 1000px;
   touch-action: manipulation;
 }
+
+/* Stage HUD overlay (classic layout) */
+.stage-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: #fff;
+  font-family: var(--pixel-font);
+}
+.hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 4px 10px;
+}
+.hud-item .label { font-size: 9px; opacity: 0.8; display:block; }
+.hud-item .value { font-size: 14px; margin-top: 4px; display:block; }
+
+.hud-side { position: absolute; top: 44px; }
+.hud-side.left { left: 6px; }
+.hud-side.right { right: 6px; }
+.side-panel {
+  background: #0b0b0b;
+  border: 2px solid #3a3a3a;
+  border-radius: 4px;
+  padding: 6px;
+  width: 90px;
+}
+.side-panel .label { font-size: 9px; opacity: 0.8; display:block; margin-bottom: 4px; }
+.next-queue { display: flex; flex-direction: column; gap: 6px; min-height: 64px; }
 
 /* HUD */
 .hud {
