@@ -7,6 +7,24 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+  <!-- Intro Splash Screen -->
+  <div id="introSplash" class="intro-splash">
+    <div class="intro-content">
+      <div class="falling-blocks" id="fallingBlocks"></div>
+      <div class="intro-logo">
+        <h1 class="title-glitch" data-text="BlockFall">BlockFall</h1>
+        <p class="tagline">Master the falling blocks</p>
+      </div>
+      <button id="playBtn" class="play-btn" type="button">
+        <span class="play-icon">▶</span>
+        <span class="play-text">Play Game</span>
+      </button>
+      <div class="intro-footer">
+        <p>Use arrow keys to move • Space to drop • P to pause</p>
+      </div>
+    </div>
+  </div>
+
   <header>
     <h1>BlockFall</h1>
   </header>
@@ -70,7 +88,6 @@
     </div>
   </div>
 
-  <script src="js/game.js"></script>
   <div id="pauseOverlay" hidden aria-hidden="true">
     <div class="overlay-inner">
       <h2>Paused</h2>
@@ -88,5 +105,6 @@
     </div>
   </div>
   
+  <script src="js/game.js"></script>
 </body>
 </html>

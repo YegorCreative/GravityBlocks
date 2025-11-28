@@ -4,8 +4,64 @@
 (function(){
   'use strict';
 
-  const canvas=document.getElementById('gameBoard');
-  const ctx=canvas.getContext('2d');
+  // Wait for DOM to be ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  function init() {
+    initIntroScreen();
+  }
+
+  // Intro Screen Animation
+  function initIntroScreen() {
+    const introSplash = document.getElementById('introSplash');
+    const playBtn = document.getElementById('playBtn');
+    const fallingBlocks = document.getElementById('fallingBlocks');
+    
+    if (!introSplash || !playBtn) {
+      // If intro elements missing, start game immediately
+      startGame();
+      return;
+    }
+
+    // Create falling blocks animation
+    const colors = ['#34e7e4', '#ffd166', '#b084ff', '#2bd36f', '#ff5a5f', '#4dabff', '#ff9f43'];
+    const blockCount = 20;
+    
+    for (let i = 0; i < blockCount; i++) {
+      setTimeout(() => {
+        const block = document.createElement('div');
+        block.className = 'block-piece';
+        block.style.left = Math.random() * 100 + '%';
+        block.style.color = colors[Math.floor(Math.random() * colors.length)];
+        block.style.backgroundColor = 'currentColor';
+        block.style.animationDuration = (3 + Math.random() * 4) + 's';
+        block.style.animationDelay = (Math.random() * 2) + 's';
+        fallingBlocks.appendChild(block);
+      }, i * 200);
+    }
+
+    // Play button click handler
+    playBtn.addEventListener('click', () => {
+      playBtn.disabled = true;
+      playBtn.style.transform = 'scale(0.95)';
+      
+      setTimeout(() => {
+        introSplash.classList.add('hidden');
+        setTimeout(() => {
+          introSplash.remove();
+          startGame();
+        }, 800);
+      }, 200);
+    });
+  }
+
+  function startGame() {
+    const canvas=document.getElementById('gameBoard');
+    const ctx=canvas.getContext('2d');
   const elScore=document.getElementById('score');
   const elLevel=document.getElementById('level');
   const elLines=document.getElementById('lines');
@@ -121,5 +177,8 @@
   function reset(){ Object.assign(state,{grid:createMatrix(COLS,ROWS,0), score:0, lines:0, level:1, energy:0, bombs:0, combo:0, backToBack:false, queue:[], hold:null, canHold:true, running:true, paused:false, dropCounter:0, lockTimer:0, grounded:false, clearing:[]}); updateSpeed(); fillQueue(); spawn(); updateHUD(); renderHoldNext(); }
   function updateClearing(delta){ if(!state.clearing.length) return; for(const c of state.clearing) c.prog += delta/300; if(state.clearing.every(c=>c.prog>=1)) finalizeClears(); }
   let last=0; function loop(t=0){ const d=t-last; last=t; if(state.running && !state.paused){ state.dropCounter+=d; groundCheck(d); if(state.dropCounter>=state.dropInterval){ state.dropCounter=0; if(!move(0,1)) groundCheck(d); } lateral(d); updateClearing(d); } render(); requestAnimationFrame(loop); }
+  
+  // Initialize game
   updateSpeed(); fillQueue(); spawn(); updateHUD(); renderHoldNext(); requestAnimationFrame(loop);
+  } // end startGame
 })();
