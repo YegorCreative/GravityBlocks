@@ -4,24 +4,33 @@
 (function(){
   'use strict';
 
+  console.log('Game script loaded!');
+
   // Wait for DOM to be ready
   if (document.readyState === 'loading') {
+    console.log('Waiting for DOM...');
     document.addEventListener('DOMContentLoaded', init);
   } else {
+    console.log('DOM already ready, calling init');
     init();
   }
 
   function init() {
+    console.log('Init called');
     initIntroScreen();
   }
 
   // Intro Screen Animation
   function initIntroScreen() {
+    console.log('InitIntroScreen called');
     const introSplash = document.getElementById('introSplash');
     const playBtn = document.getElementById('playBtn');
     const fallingBlocks = document.getElementById('fallingBlocks');
     
+    console.log('Elements:', {introSplash, playBtn, fallingBlocks});
+    
     if (!introSplash || !playBtn || !fallingBlocks) {
+      console.log('Missing intro elements, starting game directly');
       startGame();
       return;
     }
@@ -45,6 +54,7 @@
 
     // Play button click handler
     playBtn.addEventListener('click', () => {
+      console.log('Play button clicked');
       playBtn.disabled = true;
       playBtn.style.transform = 'scale(0.95)';
       
@@ -52,6 +62,7 @@
         introSplash.classList.add('hidden');
         setTimeout(() => {
           introSplash.remove();
+          console.log('Starting game...');
           startGame();
         }, 800);
       }, 200);
@@ -59,9 +70,12 @@
   }
 
   function startGame() {
+    console.log('startGame function called');
     const canvas=document.getElementById('gameBoard');
+    console.log('Canvas element:', canvas);
     if (!canvas) return;
     const ctx=canvas.getContext('2d');
+    console.log('Canvas context:', ctx);
     if (!ctx) return;
   const elScore=document.getElementById('score');
   const elLevel=document.getElementById('level');
@@ -120,7 +134,18 @@
   const updateSpeed=()=> state.dropInterval=Math.max(MIN_DROP_MS,Math.floor(BASE_DROP_MS*Math.pow(SPEED_FACTOR,state.level-1)));
 
   function fillQueue(){ while(state.queue.length<5) state.queue.push(rng.next().value); }
-  function spawn(){ fillQueue(); const type=state.queue.shift(); fillQueue(); state.current={type,rot:0,x:Math.floor((COLS-4)/2),y:-1}; state.canHold=true; state.grounded=false; state.lockTimer=0; if(collides(state.current,state.grid)) state.running=false; renderHoldNext(); }
+  function spawn(){ 
+    fillQueue(); 
+    const type=state.queue.shift(); 
+    fillQueue(); 
+    state.current={type,rot:0,x:Math.floor((COLS-4)/2),y:-1}; 
+    state.canHold=true; 
+    state.grounded=false; 
+    state.lockTimer=0; 
+    console.log('Spawned piece:', type, 'at position', state.current);
+    if(collides(state.current,state.grid)) state.running=false; 
+    renderHoldNext(); 
+  }
   const mat=p=>SHAPES[p.type][p.rot%4];
   function collides(p,g){ const m=mat(p); for(let y=0;y<4;y++) for(let x=0;x<4;x++) if(m[y][x]){ const gx=p.x+x, gy=p.y+y; if(gx<0||gx>=COLS||gy>=ROWS) return true; if(gy>=0 && g[gy][gx]) return true; } return false; }
   function attemptKick(np,from,to){ const key=`${from}>${to}`; const table=(np.type==='I')?KICKS.I:(np.type==='O'?null:KICKS.JLSTZ); if(!table) return !collides(np,state.grid); for(const [dx,dy] of table[key]||[[0,0]]){ const test={...np,x:np.x+dx,y:np.y+dy}; if(!collides(test,state.grid)){ Object.assign(np,test); return true; } } return false; }
@@ -171,7 +196,13 @@
   function darken(h,a){ const {r,g,b}=hexToRgb(h); return rgbToHex(clamp(r*(1-a),0,255),clamp(g*(1-a),0,255),clamp(b*(1-a),0,255)); }
   function rr(x,y,w,h,r){ const R=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+R,y); ctx.arcTo(x+w,y,x+w,y+h,R); ctx.arcTo(x+w,y+h,x,y+h,R); ctx.arcTo(x,y+h,x,y,R); ctx.arcTo(x,y,x+w,y,R); ctx.closePath(); }
   function drawCell(x,y,s,col,a=1){ const px=x*s, py=y*s, r=Math.max(3,Math.floor(s*0.18)); ctx.save(); ctx.globalAlpha=a; const g=ctx.createLinearGradient(px,py,px,py+s); g.addColorStop(0,lighten(col,0.12)); g.addColorStop(1,darken(col,0.16)); ctx.fillStyle=g; rr(px+0.8,py+0.8,s-1.6,s-1.6,r); ctx.fill(); ctx.globalAlpha=a*0.8; ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=Math.max(1,s*0.06); ctx.stroke(); ctx.globalAlpha=a*0.5; ctx.shadowColor=col; ctx.shadowBlur=Math.max(4,Math.floor(s*0.4)); ctx.strokeStyle=col; ctx.stroke(); ctx.restore(); }
-  function render(){ const {size,ox,oy}=cellGeom(); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.save(); ctx.translate(ox,oy); if(state.gridEnabled){ ctx.save(); ctx.globalAlpha=0.08; ctx.strokeStyle='#5af1ff'; for(let x=0;x<=COLS;x++){ ctx.beginPath(); ctx.moveTo(x*size+0.5,0); ctx.lineTo(x*size+0.5,ROWS*size); ctx.stroke(); } for(let y=0;y<=ROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*size+0.5); ctx.lineTo(COLS*size,y*size+0.5); ctx.stroke(); } ctx.restore(); }
+  function render(){ 
+    const {size,ox,oy}=cellGeom(); 
+    console.log('Rendering - size:', size, 'current piece:', state.current?.type, 'at y:', state.current?.y);
+    ctx.clearRect(0,0,canvas.width,canvas.height); 
+    ctx.save(); 
+    ctx.translate(ox,oy); 
+    if(state.gridEnabled){ ctx.save(); ctx.globalAlpha=0.08; ctx.strokeStyle='#5af1ff'; for(let x=0;x<=COLS;x++){ ctx.beginPath(); ctx.moveTo(x*size+0.5,0); ctx.lineTo(x*size+0.5,ROWS*size); ctx.stroke(); } for(let y=0;y<=ROWS;y++){ ctx.beginPath(); ctx.moveTo(0,y*size+0.5); ctx.lineTo(COLS*size,y*size+0.5); ctx.stroke(); } ctx.restore(); }
     for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ const v=state.grid[y][x]; if(v) drawCell(x,y,size,COLORS[v]); }
     if(state.clearing.length){ for(const c of state.clearing){ ctx.save(); ctx.globalAlpha=1-c.prog; ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fillRect(0,c.row*size,COLS*size,size); ctx.restore(); } }
     if(state.current && state.running && state.ghostEnabled){ const gPiece={...state.current}; while(!collides({...gPiece,y:gPiece.y+1},state.grid)) gPiece.y++; const gm=mat(gPiece); for(let y=0;y<4;y++) for(let x=0;x<4;x++) if(gm[y][x]){ const gx=gPiece.x+x, gy=gPiece.y+y; if(gy>=0) drawCell(gx,gy,size,COLORS[gPiece.type],0.25); } }
@@ -206,7 +237,21 @@
   function reset(){ Object.assign(state,{grid:createMatrix(COLS,ROWS,0), score:0, lines:0, level:1, energy:0, bombs:0, combo:0, backToBack:false, queue:[], hold:null, canHold:true, running:true, paused:false, dropCounter:0, lockTimer:0, grounded:false, clearing:[]}); updateSpeed(); fillQueue(); spawn(); updateHUD(); renderHoldNext(); }
   function updateClearing(delta){ if(!state.clearing.length) return; for(const c of state.clearing) c.prog += delta/300; if(state.clearing.every(c=>c.prog>=1)) finalizeClears(); }
   let last=0; function loop(t=0){ 
-    const d=t-last; last=t; if(state.running && !state.paused){ state.dropCounter+=d; groundCheck(d); if(state.dropCounter>=state.dropInterval){ state.dropCounter=0; if(!move(0,1)) groundCheck(d); } lateral(d); updateClearing(d); } render(); requestAnimationFrame(loop); }
+    const d=t-last; last=t; 
+    if(state.running && !state.paused){ 
+      state.dropCounter+=d; 
+      groundCheck(d); 
+      if(state.dropCounter>=state.dropInterval){ 
+        console.log('Drop interval reached, moving piece down. Interval:', state.dropInterval);
+        state.dropCounter=0; 
+        if(!move(0,1)) groundCheck(d); 
+      } 
+      lateral(d); 
+      updateClearing(d); 
+    } 
+    render(); 
+    requestAnimationFrame(loop); 
+  }
   
   // Initialize game
   updateSpeed(); fillQueue(); spawn(); updateHUD(); renderHoldNext(); requestAnimationFrame(loop);
