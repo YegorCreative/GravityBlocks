@@ -81,10 +81,8 @@ canvas#gameBoard {
   box-shadow: var(--shadow-lg), 0 1px 0 rgba(255,255,255,0.02) inset;
   image-rendering: pixelated;
   display: block;
-  width: 100%;
-  max-width: 500px;
-  aspect-ratio: 10 / 20;
-  min-height: 600px;
+  width: 500px;
+  height: 1000px;
 }
 
 /* HUD */

@@ -21,11 +21,7 @@
     const playBtn = document.getElementById('playBtn');
     const fallingBlocks = document.getElementById('fallingBlocks');
     
-    console.log('Init intro screen:', {introSplash, playBtn, fallingBlocks});
-    
     if (!introSplash || !playBtn || !fallingBlocks) {
-      // If intro elements missing, start game immediately
-      console.log('Intro elements missing, starting game directly');
       startGame();
       return;
     }
@@ -63,18 +59,10 @@
   }
 
   function startGame() {
-    console.log('Starting game...');
     const canvas=document.getElementById('gameBoard');
-    if (!canvas) {
-      console.error('Canvas not found!');
-      return;
-    }
+    if (!canvas) return;
     const ctx=canvas.getContext('2d');
-    if (!ctx) {
-      console.error('Could not get canvas context!');
-      return;
-    }
-    console.log('Canvas initialized:', canvas.width, 'x', canvas.height);
+    if (!ctx) return;
   const elScore=document.getElementById('score');
   const elLevel=document.getElementById('level');
   const elLines=document.getElementById('lines');
@@ -146,30 +134,36 @@
   function finalizeClears(){ const rows=state.clearing.map(c=>c.row).sort((a,b)=>a-b); for(let i=rows.length-1;i>=0;i--){ state.grid.splice(rows[i],1); state.grid.unshift(Array(COLS).fill(0)); } state.clearing.length=0; }
   function isTSpin(lines){ if(!lines) return false; const p=state.current; if(!p||p.type!=='T'||!state.lastActionRotate) return false; const corners=[[0,0],[2,0],[0,2],[2,2]]; let filled=0; for(const [cx,cy] of corners){ const gx=p.x+cx, gy=p.y+cy; if(gx<0||gx>=COLS||gy<0||gy>=ROWS||state.grid[gy][gx]) filled++; } return filled>=3; }
   function score(lines,tSpin,hd){ let base=0; switch(lines){case 1:base=100;break;case 2:base=300;break;case 3:base=500;break;case 4:base=800;break;} if(tSpin) base=lines===1?400:lines===2?700:1200; if(state.backToBack&&(lines===4||tSpin)) base=Math.floor(base*1.5); base+=hd*2; if(state.combo>1) base+=state.combo*50; return base*state.level; }
-  function lockPiece(hard=false,hd=0){ merge(state.current); const lines=markClears(); const tSpin=isTSpin(lines); if(lines){ state.combo++; const pts=score(lines,tSpin,hd); state.score+=pts; state.lines+=lines; state.energy+=25*lines+(tSpin?30:0)+(state.combo>1?10:0); const nl=Math.floor(state.lines/LEVEL_LINES)+1; if(nl!==state.level){ state.level=nl; updateSpeed(); play('level'); } state.backToBack=(lines===4||tSpin)?true:false; play('clear'); } else { state.combo=0; state.backToBack=false; state.energy+=5; } while(state.energy>=100){ state.energy-=100; state.bombs=Math.min(3,state.bombs+1); play('bombEarn'); } updateHUD(); spawn(); }
+  function lockPiece(hard=false,hd=0){ merge(state.current); const lines=markClears(); const tSpin=isTSpin(lines); if(lines){ state.combo++; const pts=score(lines,tSpin,hd); state.score+=pts; state.lines+=lines; state.energy+=25*lines+(tSpin?30:0)+(state.combo>1?10:0); const nl=Math.floor(state.lines/LEVEL_LINES)+1; if(nl!==state.level){ state.level=nl; updateSpeed(); play('level'); } state.backToBack=(lines===4||tSpin)?true:false; play('clear'); } else { state.combo=0; state.backToBack=false; state.energy+=5; } while(state.energy>=100){ state.energy-=100; state.bombs=Math.min(3,state.bombs+1); play('bombEarn'); } state.lastActionRotate=false; updateHUD(); spawn(); }
   function groundCheck(delta){ if(!state.current) return; const below={...state.current,y:state.current.y+1}; if(collides(below,state.grid)){ if(!state.grounded){ state.grounded=true; state.lockTimer=0; } else { state.lockTimer+=delta; if(state.lockTimer>=LOCK_DELAY_MS) lockPiece(false,0); } } else { state.grounded=false; state.lockTimer=0; } }
   function updateHUD(){ elScore&&(elScore.textContent=state.score); elLines&&(elLines.textContent=state.lines); elLevel&&(elLevel.textContent=state.level); if(state.score>state.high){ state.high=state.score; localStorage.setItem('bf_high',String(state.high)); } elHigh&&(elHigh.textContent=state.high); elPowerBar&&(elPowerBar.style.width=`${Math.min(100,state.energy)}%`); elBombs&&(elBombs.textContent=state.bombs); btnBomb&&(btnBomb.disabled=state.bombs<=0||!state.running); btnRestart&&(btnRestart.disabled=state.running); }
 
   // Rendering
   const DPR=Math.max(1,window.devicePixelRatio||1);
-  let cssW=0, cssH=0;
+  let cssW=500, cssH=1000;
   function resize(){ 
     const r=canvas.getBoundingClientRect(); 
-    cssW=Math.max(300, Math.floor(r.width || canvas.clientWidth || 400)); 
-    cssH=Math.max(400, Math.floor(r.height || canvas.clientHeight || 800)); 
+    const newW=Math.max(300, Math.floor(r.width || canvas.clientWidth || 500)); 
+    const newH=Math.max(600, Math.floor(r.height || canvas.clientHeight || 1000)); 
+    if(newW > 0) cssW = newW;
+    if(newH > 0) cssH = newH;
     const w=Math.floor(cssW*DPR);
     const h=Math.floor(cssH*DPR);
-    console.log('Resize:', {cssW, cssH, w, h, rect: r});
     if(canvas.width!==w||canvas.height!==h){ 
       canvas.width=w; 
       canvas.height=h; 
     } 
-    ctx.setTransform(1,0,0,1,0,0);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
   }
-  // Wait a bit for CSS to apply before first resize
-  setTimeout(resize, 100);
+  resize();
+  setTimeout(resize, 50);
+  setTimeout(resize, 200);
   addEventListener('resize',resize);
-  function cellGeom(){ const size=Math.floor(Math.min(cssW/COLS, cssH/ROWS)); const ox=Math.floor((cssW-size*COLS)/2), oy=Math.floor((cssH-size*ROWS)/2); return {size,ox,oy}; }
+  function cellGeom(){ 
+    const size=Math.floor(Math.min(cssW/COLS, cssH/ROWS)); 
+    const ox=Math.floor((cssW-size*COLS)/2), oy=Math.floor((cssH-size*ROWS)/2); 
+    return {size,ox,oy}; 
+  }
   function hexToRgb(h){ let c=h.replace('#',''); if(c.length===3) c=c.split('').map(x=>x+x).join(''); const n=parseInt(c,16); return {r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
   const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
   function rgbToHex(r,g,b){ const t=v=>v.toString(16).padStart(2,'0'); return `#${t(r)}${t(g)}${t(b)}`; }
@@ -181,7 +175,13 @@
     for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ const v=state.grid[y][x]; if(v) drawCell(x,y,size,COLORS[v]); }
     if(state.clearing.length){ for(const c of state.clearing){ ctx.save(); ctx.globalAlpha=1-c.prog; ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fillRect(0,c.row*size,COLS*size,size); ctx.restore(); } }
     if(state.current && state.running && state.ghostEnabled){ const gPiece={...state.current}; while(!collides({...gPiece,y:gPiece.y+1},state.grid)) gPiece.y++; const gm=mat(gPiece); for(let y=0;y<4;y++) for(let x=0;x<4;x++) if(gm[y][x]){ const gx=gPiece.x+x, gy=gPiece.y+y; if(gy>=0) drawCell(gx,gy,size,COLORS[gPiece.type],0.25); } }
-    if(state.current){ const m=mat(state.current); for(let y=0;y<4;y++) for(let x=0;x<4;x++) if(m[y][x]){ const gx=state.current.x+x, gy=state.current.y+y; if(gy>=0) drawCell(gx,gy,size,COLORS[state.current.type]); } }
+    if(state.current){ 
+      const m=mat(state.current); 
+      for(let y=0;y<4;y++) for(let x=0;x<4;x++) if(m[y][x]){ 
+        const gx=state.current.x+x, gy=state.current.y+y; 
+        if(gy>=0) drawCell(gx,gy,size,COLORS[state.current.type]); 
+      } 
+    }
     ctx.restore();
     if(!state.running){ ctx.save(); ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle='#e8edf7'; ctx.font='bold 28px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'; ctx.textAlign='center'; ctx.fillText('Game Over', canvas.width/2, canvas.height/2); ctx.restore(); }
     if(state.paused){ ctx.save(); ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.restore(); }
@@ -205,7 +205,8 @@
   function toggleSettings(show){ settingsPanel && (settingsPanel.hidden=!show); }
   function reset(){ Object.assign(state,{grid:createMatrix(COLS,ROWS,0), score:0, lines:0, level:1, energy:0, bombs:0, combo:0, backToBack:false, queue:[], hold:null, canHold:true, running:true, paused:false, dropCounter:0, lockTimer:0, grounded:false, clearing:[]}); updateSpeed(); fillQueue(); spawn(); updateHUD(); renderHoldNext(); }
   function updateClearing(delta){ if(!state.clearing.length) return; for(const c of state.clearing) c.prog += delta/300; if(state.clearing.every(c=>c.prog>=1)) finalizeClears(); }
-  let last=0; function loop(t=0){ const d=t-last; last=t; if(state.running && !state.paused){ state.dropCounter+=d; groundCheck(d); if(state.dropCounter>=state.dropInterval){ state.dropCounter=0; if(!move(0,1)) groundCheck(d); } lateral(d); updateClearing(d); } render(); requestAnimationFrame(loop); }
+  let last=0; function loop(t=0){ 
+    const d=t-last; last=t; if(state.running && !state.paused){ state.dropCounter+=d; groundCheck(d); if(state.dropCounter>=state.dropInterval){ state.dropCounter=0; if(!move(0,1)) groundCheck(d); } lateral(d); updateClearing(d); } render(); requestAnimationFrame(loop); }
   
   // Initialize game
   updateSpeed(); fillQueue(); spawn(); updateHUD(); renderHoldNext(); requestAnimationFrame(loop);
