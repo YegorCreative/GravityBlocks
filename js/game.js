@@ -210,6 +210,24 @@
       ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, 3, BLOCK_SIZE - 1);
     }
 
+    // Ghost piece helpers
+    function ghostYFor(x, y, shape){
+      let gy = y;
+      while(true){
+        // Try one row down; if collides, stop at current gy
+        if (collides(x, gy + 1)) break;
+        gy++;
+      }
+      return gy;
+    }
+    function drawGhostBlock(x, y, color){
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+      ctx.restore();
+    }
+
     function render() {
       // Clear canvas
       ctx.fillStyle = '#0f0f12';
@@ -236,6 +254,21 @@
         for (let col = 0; col < COLS; col++) {
           if (state.grid[row][col]) {
             drawBlock(col, row, COLORS[state.grid[row][col]]);
+          }
+        }
+      }
+
+      // Draw ghost piece (landing preview)
+      if (state.current) {
+        const shape = state.current.shape;
+        const gy = ghostYFor(state.x, state.y, shape);
+        for (let row = 0; row < shape.length; row++) {
+          for (let col = 0; col < shape[row].length; col++) {
+            if (shape[row][col]) {
+              const x = state.x + col;
+              const y = gy + row;
+              if (y >= 0) drawGhostBlock(x, y, COLORS[state.current.type]);
+            }
           }
         }
       }
@@ -323,10 +356,22 @@
     const btnSoft = document.getElementById('btn-soft');
     const btnHard = document.getElementById('btn-hard');
 
-    if (btnLeft) btnLeft.addEventListener('click', () => { move(-1, 0); render(); });
-    if (btnRight) btnRight.addEventListener('click', () => { move(1, 0); render(); });
+    function addHold(btn, fn, interval=120){
+      if(!btn) return;
+      let t=null;
+      const start=(e)=>{ e.preventDefault(); fn(); render(); if(t) clearInterval(t); t=setInterval(()=>{ fn(); render(); }, interval); };
+      const stop=()=>{ if(t){ clearInterval(t); t=null; } };
+      btn.addEventListener('pointerdown', start);
+      window.addEventListener('pointerup', stop);
+      window.addEventListener('pointercancel', stop);
+      // prevent click ghost
+      btn.addEventListener('click', (e)=> e.preventDefault());
+    }
+
+    addHold(btnLeft, ()=>move(-1,0));
+    addHold(btnRight, ()=>move(1,0));
+    addHold(btnSoft, ()=>drop());
     if (btnRotate) btnRotate.addEventListener('click', () => { rotate(); render(); });
-    if (btnSoft) btnSoft.addEventListener('click', () => { drop(); render(); });
     if (btnHard) btnHard.addEventListener('click', () => { hardDrop(); render(); });
 
     // Game loop
