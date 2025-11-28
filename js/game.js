@@ -21,8 +21,11 @@
     const playBtn = document.getElementById('playBtn');
     const fallingBlocks = document.getElementById('fallingBlocks');
     
-    if (!introSplash || !playBtn) {
+    console.log('Init intro screen:', {introSplash, playBtn, fallingBlocks});
+    
+    if (!introSplash || !playBtn || !fallingBlocks) {
       // If intro elements missing, start game immediately
+      console.log('Intro elements missing, starting game directly');
       startGame();
       return;
     }
@@ -60,8 +63,18 @@
   }
 
   function startGame() {
+    console.log('Starting game...');
     const canvas=document.getElementById('gameBoard');
+    if (!canvas) {
+      console.error('Canvas not found!');
+      return;
+    }
     const ctx=canvas.getContext('2d');
+    if (!ctx) {
+      console.error('Could not get canvas context!');
+      return;
+    }
+    console.log('Canvas initialized:', canvas.width, 'x', canvas.height);
   const elScore=document.getElementById('score');
   const elLevel=document.getElementById('level');
   const elLines=document.getElementById('lines');
@@ -146,13 +159,15 @@
     cssH=Math.max(400, Math.floor(r.height || canvas.clientHeight || 800)); 
     const w=Math.floor(cssW*DPR);
     const h=Math.floor(cssH*DPR);
+    console.log('Resize:', {cssW, cssH, w, h, rect: r});
     if(canvas.width!==w||canvas.height!==h){ 
       canvas.width=w; 
       canvas.height=h; 
     } 
     ctx.setTransform(1,0,0,1,0,0);
-  } 
-  resize(); 
+  }
+  // Wait a bit for CSS to apply before first resize
+  setTimeout(resize, 100);
   addEventListener('resize',resize);
   function cellGeom(){ const size=Math.floor(Math.min(cssW/COLS, cssH/ROWS)); const ox=Math.floor((cssW-size*COLS)/2), oy=Math.floor((cssH-size*ROWS)/2); return {size,ox,oy}; }
   function hexToRgb(h){ let c=h.replace('#',''); if(c.length===3) c=c.split('').map(x=>x+x).join(''); const n=parseInt(c,16); return {r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
