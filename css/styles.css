@@ -82,8 +82,9 @@ canvas#gameBoard {
   image-rendering: pixelated;
   display: block;
   width: 100%;
-  max-width: 720px;
-  height: auto;
+  max-width: 500px;
+  aspect-ratio: 10 / 20;
+  min-height: 600px;
 }
 
 /* HUD */

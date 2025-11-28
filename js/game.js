@@ -138,8 +138,22 @@
   function updateHUD(){ elScore&&(elScore.textContent=state.score); elLines&&(elLines.textContent=state.lines); elLevel&&(elLevel.textContent=state.level); if(state.score>state.high){ state.high=state.score; localStorage.setItem('bf_high',String(state.high)); } elHigh&&(elHigh.textContent=state.high); elPowerBar&&(elPowerBar.style.width=`${Math.min(100,state.energy)}%`); elBombs&&(elBombs.textContent=state.bombs); btnBomb&&(btnBomb.disabled=state.bombs<=0||!state.running); btnRestart&&(btnRestart.disabled=state.running); }
 
   // Rendering
-  let cssW=canvas.clientWidth, cssH=canvas.clientHeight; const DPR=Math.max(1,window.devicePixelRatio||1);
-  function resize(){ const r=canvas.getBoundingClientRect(); cssW=Math.floor(r.width); cssH=Math.floor(r.height); const w=Math.floor(cssW*DPR), h=Math.floor(cssH*DPR); if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; } ctx.setTransform(1,0,0,1,0,0);} resize(); addEventListener('resize',resize);
+  const DPR=Math.max(1,window.devicePixelRatio||1);
+  let cssW=0, cssH=0;
+  function resize(){ 
+    const r=canvas.getBoundingClientRect(); 
+    cssW=Math.max(300, Math.floor(r.width || canvas.clientWidth || 400)); 
+    cssH=Math.max(400, Math.floor(r.height || canvas.clientHeight || 800)); 
+    const w=Math.floor(cssW*DPR);
+    const h=Math.floor(cssH*DPR);
+    if(canvas.width!==w||canvas.height!==h){ 
+      canvas.width=w; 
+      canvas.height=h; 
+    } 
+    ctx.setTransform(1,0,0,1,0,0);
+  } 
+  resize(); 
+  addEventListener('resize',resize);
   function cellGeom(){ const size=Math.floor(Math.min(cssW/COLS, cssH/ROWS)); const ox=Math.floor((cssW-size*COLS)/2), oy=Math.floor((cssH-size*ROWS)/2); return {size,ox,oy}; }
   function hexToRgb(h){ let c=h.replace('#',''); if(c.length===3) c=c.split('').map(x=>x+x).join(''); const n=parseInt(c,16); return {r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
   const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
