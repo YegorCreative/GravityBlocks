@@ -14,6 +14,9 @@
   function init() {
     const introSplash = document.getElementById('introSplash');
     const playBtn = document.getElementById('playBtn');
+    fitStage();
+    window.addEventListener('resize', fitStage, { passive: true });
+    window.addEventListener('orientationchange', fitStage);
     
     if (playBtn) {
       playBtn.addEventListener('click', () => {
@@ -22,15 +25,37 @@
           introSplash.style.opacity = '0';
           setTimeout(() => {
             introSplash.remove();
+            fitStage();
+            setTimeout(fitStage, 100);
             startGame();
           }, 500);
         } else {
+          fitStage();
           startGame();
         }
       });
     } else {
+      fitStage();
       startGame();
     }
+  }
+
+  // Uniform scaler: scales the fixed 500x1000 stage to fit viewport safely
+  function fitStage(){
+    const stage = document.getElementById('stage');
+    if(!stage) return;
+    const vw = window.innerWidth || document.documentElement.clientWidth || 500;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 1000;
+    const header = document.querySelector('header');
+    const controls = document.querySelector('.mobile-controls');
+    const headerH = header ? Math.ceil(header.getBoundingClientRect().height) : 0;
+    const controlsVisible = controls && getComputedStyle(controls).display !== 'none';
+    const controlsH = controlsVisible ? Math.ceil(controls.getBoundingClientRect().height) : 0;
+    const vPad = 12; // breathing room
+    const availW = Math.max(200, vw - 24);
+    const availH = Math.max(300, vh - headerH - controlsH - vPad*2);
+    const s = Math.max(0.2, Math.min(availW/500, availH/1000));
+    stage.style.transform = `scale(${s})`;
   }
 
   function startGame() {
@@ -46,22 +71,27 @@
       return;
     }
 
-    // Set canvas size
+    // Fixed canvas sizing (stable)
+    const DPR = 1;
+    const BLOCK_SIZE = 50;
+    canvas.style.width = '500px';
+    canvas.style.height = '1000px';
     canvas.width = 500;
     canvas.height = 1000;
+    ctx.setTransform(1,0,0,1,0,0);
 
     const COLS = 10;
     const ROWS = 20;
-    const BLOCK_SIZE = 50;
 
+    // Guideline-esque colors for classic look
     const COLORS = {
-      I: '#34e7e4',
-      O: '#ffd166',
-      T: '#b084ff',
-      S: '#2bd36f',
-      Z: '#ff5a5f',
-      J: '#4dabff',
-      L: '#ff9f43'
+      I: '#00F0F0', // cyan
+      O: '#F0F000', // yellow
+      T: '#A000F0', // purple
+      S: '#00F000', // green
+      Z: '#F00000', // red
+      J: '#0000F0', // blue
+      L: '#F0A000'  // orange
     };
 
     const SHAPES = {
@@ -235,7 +265,7 @@
 
       // Draw grid
       ctx.strokeStyle = 'rgba(90,241,255,0.08)';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = Math.max(1, Math.floor(BLOCK_SIZE * 0.02));
       for (let x = 0; x <= COLS; x++) {
         ctx.beginPath();
         ctx.moveTo(x * BLOCK_SIZE, 0);

@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GravityBlocks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -31,7 +34,9 @@
 
   <main class="game-wrapper">
     <div class="board">
-      <canvas id="gameBoard" aria-label="GravityBlocks canvas"></canvas>
+      <div id="stage" aria-label="Scaled stage">
+        <canvas id="gameBoard" aria-label="GravityBlocks canvas"></canvas>
+      </div>
     </div>
     <aside class="hud">
       <div class="stat">
