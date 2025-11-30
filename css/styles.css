@@ -230,7 +230,7 @@ canvas#gameBoard {
 .toggle { font-size: 14px; display: flex; align-items: center; gap: 8px; }
 .toggle input { width: 18px; height: 18px; }
 
-#pauseBtn, #settingsBtn {
+#pauseBtn, #settingsBtn, #speedBtn {
   appearance: none;
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) - 6px);
@@ -243,8 +243,8 @@ canvas#gameBoard {
   cursor: pointer;
   transition: border-color 160ms ease, transform 120ms ease;
 }
-#pauseBtn:hover, #settingsBtn:hover { border-color: rgba(0,234,255,0.35); }
-#pauseBtn:active, #settingsBtn:active { transform: translateY(1px); }
+#pauseBtn:hover, #settingsBtn:hover, #speedBtn:hover { border-color: rgba(0,234,255,0.35); }
+#pauseBtn:active, #settingsBtn:active, #speedBtn:active { transform: translateY(1px); }
 
 #resumeBtn, #closeSettings {
   appearance: none;

@@ -1,7 +1,7 @@
 /**
  * BlockFall - Tetris Game
  */
-(function(){
+(function () {
   'use strict';
 
   // Wait for DOM
@@ -14,13 +14,14 @@
   function init() {
     const introSplash = document.getElementById('introSplash');
     const playBtn = document.getElementById('playBtn');
-    
+
     // UI Buttons
     const restartBtn = document.getElementById('restartBtn');
     const pauseBtn = document.getElementById('pauseBtn');
     const settingsBtn = document.getElementById('settingsBtn');
     const closeSettingsBtn = document.getElementById('closeSettings');
     const bombBtn = document.getElementById('bombBtn');
+    const speedBtn = document.getElementById('speedBtn');
     const resumeBtn = document.getElementById('resumeBtn');
     const settingsPanel = document.getElementById('settingsPanel');
     const pauseOverlay = document.getElementById('pauseOverlay');
@@ -28,7 +29,7 @@
     fitStage();
     window.addEventListener('resize', fitStage, { passive: true });
     window.addEventListener('orientationchange', fitStage);
-    
+
     // Start Game Flow
     if (playBtn) {
       playBtn.addEventListener('click', () => {
@@ -72,12 +73,14 @@
     });
 
     if (bombBtn) bombBtn.addEventListener('click', () => window.useBomb());
+
+    if (speedBtn) speedBtn.addEventListener('click', () => window.toggleSpeed());
   }
 
   // Uniform scaler: scales the fixed 500x1000 stage to fit viewport safely
-  function fitStage(){
+  function fitStage() {
     const stage = document.getElementById('stage');
-    if(!stage) return;
+    if (!stage) return;
     const vw = window.innerWidth || document.documentElement.clientWidth || 500;
     const vh = window.innerHeight || document.documentElement.clientHeight || 1000;
     const header = document.querySelector('header');
@@ -87,8 +90,8 @@
     const controlsH = controlsVisible ? Math.ceil(controls.getBoundingClientRect().height) : 0;
     const vPad = 12; // breathing room
     const availW = Math.max(200, vw - 24);
-    const availH = Math.max(300, vh - headerH - controlsH - vPad*2);
-    const s = Math.max(0.2, Math.min(availW/500, availH/1000));
+    const availH = Math.max(300, vh - headerH - controlsH - vPad * 2);
+    const s = Math.max(0.2, Math.min(availW / 500, availH / 1000));
     stage.style.transform = `scale(${s})`;
   }
 
@@ -96,12 +99,12 @@
     const canvas = document.getElementById('gameBoard');
     const holdCanvas = document.getElementById('holdCanvas');
     const nextQueueDiv = document.getElementById('nextQueue');
-    
+
     if (!canvas) {
       console.error('Canvas not found!');
       return;
     }
-    
+
     const ctx = canvas.getContext('2d');
     const holdCtx = holdCanvas ? holdCanvas.getContext('2d') : null;
 
@@ -109,7 +112,7 @@
     const BLOCK_SIZE = 50;
     canvas.width = 500;
     canvas.height = 1000;
-    
+
     if (holdCanvas) {
       holdCanvas.width = 100; // 4 blocks * 25 (scaled down)
       holdCanvas.height = 100;
@@ -125,13 +128,13 @@
     };
 
     const SHAPES = {
-      I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
-      O: [[1,1],[1,1]],
-      T: [[0,1,0],[1,1,1],[0,0,0]],
-      S: [[0,1,1],[1,1,0],[0,0,0]],
-      Z: [[1,1,0],[0,1,1],[0,0,0]],
-      J: [[1,0,0],[1,1,1],[0,0,0]],
-      L: [[0,0,1],[1,1,1],[0,0,0]]
+      I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
+      O: [[1, 1], [1, 1]],
+      T: [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
+      S: [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
+      Z: [[1, 1, 0], [0, 1, 1], [0, 0, 0]],
+      J: [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
+      L: [[0, 0, 1], [1, 1, 1], [0, 0, 0]]
     };
 
     const TYPES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
@@ -153,7 +156,8 @@
       bombs: 0,
       running: true,
       paused: false,
-      dropInterval: 1000
+      dropInterval: 1000,
+      speedMultiplier: 1
     };
 
     // --- Core Logic ---
@@ -171,10 +175,11 @@
       state.running = true;
       state.paused = false;
       state.dropInterval = 1000;
-      
+      state.speedMultiplier = 1;
+
       // Fill next queue
-      for(let i=0; i<3; i++) state.nextQueue.push(randomPiece());
-      
+      for (let i = 0; i < 3; i++) state.nextQueue.push(randomPiece());
+
       spawn();
       updateHUD();
     }
@@ -195,11 +200,16 @@
       if (!state.running || state.paused || state.bombs <= 0) return;
       state.bombs--;
       // Bomb logic: clear bottom 2 rows
-      state.grid.splice(ROWS-2, 2);
+      state.grid.splice(ROWS - 2, 2);
       state.grid.unshift(Array(COLS).fill(0));
       state.grid.unshift(Array(COLS).fill(0));
       updateHUD();
       render();
+    };
+    window.toggleSpeed = () => {
+      state.speedMultiplier++;
+      if (state.speedMultiplier > 5) state.speedMultiplier = 1;
+      updateHUD();
     };
 
     function randomPiece() {
@@ -213,11 +223,11 @@
       }
       state.current = state.nextQueue.shift();
       state.nextQueue.push(randomPiece());
-      
+
       state.x = Math.floor((COLS - state.current.shape[0].length) / 2);
       state.y = 0;
       state.canHold = true;
-      
+
       if (collides(state.x, state.y)) {
         state.running = false;
         saveHighScore();
@@ -227,7 +237,7 @@
 
     function holdPiece() {
       if (!state.canHold || !state.running || state.paused) return;
-      
+
       if (state.hold) {
         const temp = state.current;
         state.current = state.hold;
@@ -239,7 +249,7 @@
         state.hold = state.current;
         spawn();
       }
-      
+
       state.canHold = false;
       renderHold();
     }
@@ -251,7 +261,7 @@
           if (shape[row][col]) {
             const newX = x + col;
             const newY = y + row;
-            
+
             if (newX < 0 || newX >= COLS || newY >= ROWS) {
               return true;
             }
@@ -286,14 +296,14 @@
           state.grid.splice(row, 1);
           state.grid.unshift(Array(COLS).fill(0));
           linesCleared++;
-          row++; 
+          row++;
         }
       }
       if (linesCleared > 0) {
         const points = [0, 100, 300, 500, 800];
         state.score += points[linesCleared] * state.level;
         state.lines += linesCleared;
-        
+
         // Power meter logic
         state.power += linesCleared * 10;
         if (state.power >= 100) {
@@ -324,7 +334,7 @@
     function move(dx, dy) {
       const newX = state.x + dx;
       const newY = state.y + dy;
-      
+
       if (!collides(newX, newY)) {
         state.x = newX;
         state.y = newY;
@@ -342,7 +352,7 @@
     }
 
     function hardDrop() {
-      while (move(0, 1)) {}
+      while (move(0, 1)) { }
       merge();
       clearLines();
       spawn();
@@ -355,16 +365,16 @@
       const shape = state.current.shape;
       const n = shape.length;
       const rotated = Array(n).fill(null).map(() => Array(n).fill(0));
-      
+
       for (let row = 0; row < n; row++) {
         for (let col = 0; col < n; col++) {
           rotated[col][n - 1 - row] = shape[row][col];
         }
       }
-      
+
       const oldShape = state.current.shape;
       state.current.shape = rotated;
-      
+
       if (collides(state.x, state.y)) {
         // Wall kick (basic)
         if (!collides(state.x - 1, state.y)) state.x -= 1;
@@ -375,25 +385,51 @@
 
     // --- Rendering ---
 
-    function drawBlock(ctx, x, y, color, size=BLOCK_SIZE) {
+    function drawBlock(ctx, x, y, color, size = BLOCK_SIZE) {
+      // Main block
       ctx.fillStyle = color;
-      ctx.fillRect(x * size, y * size, size - 1, size - 1);
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.fillRect(x * size, y * size, size - 1, size * 0.1);
-      ctx.fillRect(x * size, y * size, size * 0.1, size - 1);
+      ctx.fillRect(x * size, y * size, size, size);
+
+      // Bevel effect (Classic Tetris style)
+      // Top & Left (Light)
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath();
+      ctx.moveTo(x * size, y * size + size);
+      ctx.lineTo(x * size, y * size);
+      ctx.lineTo(x * size + size, y * size);
+      ctx.lineTo(x * size + size - 4, y * size + 4);
+      ctx.lineTo(x * size + 4, y * size + 4);
+      ctx.lineTo(x * size + 4, y * size + size - 4);
+      ctx.fill();
+
+      // Bottom & Right (Dark)
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.moveTo(x * size, y * size + size);
+      ctx.lineTo(x * size + size, y * size + size);
+      ctx.lineTo(x * size + size, y * size);
+      ctx.lineTo(x * size + size - 4, y * size + 4);
+      ctx.lineTo(x * size + size - 4, y * size + size - 4);
+      ctx.lineTo(x * size + 4, y * size + size - 4);
+      ctx.fill();
+
+      // Inner square
+      ctx.fillStyle = 'rgba(0,0,0,0.1)';
+      ctx.fillRect(x * size + 4, y * size + 4, size - 8, size - 8);
     }
 
     function drawGhostBlock(x, y, color) {
       ctx.save();
       ctx.globalAlpha = 0.2;
-      ctx.fillStyle = color;
-      ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x * BLOCK_SIZE + 2, y * BLOCK_SIZE + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4);
       ctx.restore();
     }
 
-    function ghostYFor(x, y, shape){
+    function ghostYFor(x, y, shape) {
       let gy = y;
-      while(true){
+      while (true) {
         if (collides(x, gy + 1)) break;
         gy++;
       }
@@ -405,7 +441,7 @@
       ctx.fillStyle = '#0f0f12';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Grid
+      // Grid (subtle)
       ctx.strokeStyle = 'rgba(255,255,255,0.03)';
       ctx.lineWidth = 1;
       for (let x = 0; x <= COLS; x++) {
@@ -476,12 +512,13 @@
         const size = 20;
         const offsetX = (holdCanvas.width - shape[0].length * size) / 2;
         const offsetY = (holdCanvas.height - shape.length * size) / 2;
-        
+
         for (let row = 0; row < shape.length; row++) {
           for (let col = 0; col < shape[row].length; col++) {
             if (shape[row][col]) {
+              // Simplified draw for hold/next
               holdCtx.fillStyle = COLORS[state.hold.type];
-              holdCtx.fillRect(offsetX + col * size, offsetY + row * size, size-1, size-1);
+              holdCtx.fillRect(offsetX + col * size, offsetY + row * size, size - 1, size - 1);
             }
           }
         }
@@ -500,12 +537,13 @@
         const size = 15;
         const offsetX = (c.width - shape[0].length * size) / 2;
         const offsetY = (c.height - shape.length * size) / 2;
-        
+
         for (let row = 0; row < shape.length; row++) {
           for (let col = 0; col < shape[row].length; col++) {
             if (shape[row][col]) {
+              // Simplified draw for hold/next
               cx.fillStyle = COLORS[piece.type];
-              cx.fillRect(offsetX + col * size, offsetY + row * size, size-1, size-1);
+              cx.fillRect(offsetX + col * size, offsetY + row * size, size - 1, size - 1);
             }
           }
         }
@@ -521,6 +559,7 @@
       const elBombs = document.getElementById('bombs');
       const elPower = document.getElementById('powerBar');
       const btnBomb = document.getElementById('bombBtn');
+      const btnSpeed = document.getElementById('speedBtn');
 
       if (elScore) elScore.textContent = state.score;
       if (elLines) elLines.textContent = state.lines;
@@ -528,23 +567,24 @@
       if (elHigh) elHigh.textContent = state.highScore;
       if (elBombs) elBombs.textContent = state.bombs;
       if (elPower) elPower.style.width = `${state.power}%`;
-      
+
       if (btnBomb) btnBomb.disabled = state.bombs <= 0;
+      if (btnSpeed) btnSpeed.textContent = `Speed: ${state.speedMultiplier}x`;
     }
 
     // Input handling
     document.addEventListener('keydown', (e) => {
       if (!state.running || state.paused) return;
-      
-      switch(e.key) {
+
+      switch (e.key) {
         case 'ArrowLeft': e.preventDefault(); move(-1, 0); break;
         case 'ArrowRight': e.preventDefault(); move(1, 0); break;
         case 'ArrowDown': e.preventDefault(); drop(); break;
         case 'ArrowUp': e.preventDefault(); rotate(); break;
         case ' ': e.preventDefault(); hardDrop(); break;
         case 'c': case 'C': case 'Shift': e.preventDefault(); holdPiece(); break;
-        case 'p': case 'P': 
-          state.paused = !state.paused; 
+        case 'p': case 'P':
+          state.paused = !state.paused;
           const overlay = document.getElementById('pauseOverlay');
           if (overlay) overlay.hidden = !state.paused;
           break;
@@ -560,26 +600,26 @@
     const btnHard = document.getElementById('btn-hard');
     const btnBombMobile = document.getElementById('btn-bomb');
 
-    function addHold(btn, fn, interval=100){
-      if(!btn) return;
-      let t=null;
-      const start=(e)=>{ 
-        e.preventDefault(); 
-        fn(); 
-        render(); 
-        if(t) clearInterval(t); 
-        t=setInterval(()=>{ fn(); render(); }, interval); 
+    function addHold(btn, fn, interval = 100) {
+      if (!btn) return;
+      let t = null;
+      const start = (e) => {
+        e.preventDefault();
+        fn();
+        render();
+        if (t) clearInterval(t);
+        t = setInterval(() => { fn(); render(); }, interval);
       };
-      const stop=()=>{ if(t){ clearInterval(t); t=null; } };
+      const stop = () => { if (t) { clearInterval(t); t = null; } };
       btn.addEventListener('pointerdown', start);
       window.addEventListener('pointerup', stop);
       window.addEventListener('pointercancel', stop);
-      btn.addEventListener('click', (e)=> e.preventDefault());
+      btn.addEventListener('click', (e) => e.preventDefault());
     }
 
-    addHold(btnLeft, ()=>move(-1,0));
-    addHold(btnRight, ()=>move(1,0));
-    addHold(btnSoft, ()=>drop());
+    addHold(btnLeft, () => move(-1, 0));
+    addHold(btnRight, () => move(1, 0));
+    addHold(btnSoft, () => drop());
     if (btnRotate) btnRotate.addEventListener('click', () => { rotate(); render(); });
     if (btnHard) btnHard.addEventListener('click', () => { hardDrop(); render(); });
     if (btnBombMobile) btnBombMobile.addEventListener('click', () => window.useBomb());
@@ -594,7 +634,10 @@
 
       if (state.running && !state.paused) {
         dropCounter += deltaTime;
-        if (dropCounter > state.dropInterval) {
+        // Apply speed multiplier
+        const effectiveInterval = state.dropInterval / state.speedMultiplier;
+
+        if (dropCounter > effectiveInterval) {
           drop();
           dropCounter = 0;
         }
