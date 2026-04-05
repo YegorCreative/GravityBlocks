@@ -588,7 +588,7 @@ canvas#gameBoard {
   z-index: 2;
   text-align: center;
   padding: 40px 20px;
-  max-width: 600px;
+  max-width: min(94vw, 980px);
 }
 
 /* Falling blocks background animation */
@@ -630,11 +630,17 @@ canvas#gameBoard {
 
 /* Glitch title animation */
 .intro-logo {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-bottom: 48px;
 }
 
 .title-glitch {
-  font-size: clamp(48px, 12vw, 96px);
+  display: inline-block;
+  max-width: 100%;
+  font-size: clamp(34px, 10vw, 92px);
   font-weight: 800;
   margin: 0 0 16px 0;
   background: linear-gradient(135deg, var(--glow) 0%, #00a8ff 50%, var(--glow) 100%);
@@ -644,7 +650,10 @@ canvas#gameBoard {
   -webkit-text-fill-color: transparent;
   animation: gradientShift 3s ease infinite, glitchTitle 5s infinite;
   position: relative;
-  letter-spacing: 0.05em;
+  line-height: 1.06;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  padding-inline: 0.06em;
   text-shadow: 0 0 40px rgba(0, 234, 255, 0.5);
 }
 
@@ -799,7 +808,8 @@ canvas#gameBoard {
 
 @media (max-width: 768px) {
   .title-glitch {
-    font-size: clamp(36px, 10vw, 64px);
+    font-size: clamp(28px, 10vw, 56px);
+    letter-spacing: 0.01em;
   }
   .play-btn {
     padding: 16px 40px;
