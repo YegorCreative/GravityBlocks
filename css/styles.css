@@ -84,14 +84,16 @@ header h1 {
 
 .board {
   grid-column: 2;
-  display: grid;
-  place-items: center;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 /* Fixed stage that we scale uniformly */
 #stage {
   width: 500px;
   height: 1000px;
+  margin-inline: auto;
   transform-origin: top center;
   background: #000;
   border: 12px solid #2a2a2a;
