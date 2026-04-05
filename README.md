@@ -1,14 +1,11 @@
 # GravityBlocks
-Gravity Blocks
-# BlockFall
-
-BlockFall is a simple, browser-based falling blocks game inspired by classic Tetris-style gameplay.  
+GravityBlocks is a simple, browser-based falling blocks game inspired by classic Tetris-style gameplay.  
 Built with HTML, CSS, and vanilla JavaScript, and deployed using GitHub Pages.
 
 ## Live Demo
 
 > 🔗 **Live site:** (add your GitHub Pages URL here)  
-> Example: `https://your-username.github.io/blockfall/`
+> Example: `https://your-username.github.io/gravityblocks/`
 
 ---
 
@@ -57,8 +54,8 @@ Built with HTML, CSS, and vanilla JavaScript, and deployed using GitHub Pages.
 ## Project Structure
 
 ```text
-blockfall/
+gravityblocks/
 ├── index.html        # Main HTML entry point
-├── styles.css        # Main styles and layout
-├── game.js           # Core game logic and controls
+├── css/styles.css    # Main styles and layout
+├── js/game.js        # Core game logic and controls
 └── assets/           # (Optional) icons, sounds, images

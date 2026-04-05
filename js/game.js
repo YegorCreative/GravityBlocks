@@ -1,8 +1,41 @@
 /**
- * BlockFall - Tetris Game
+ * GravityBlocks - Tetris Game
  */
 (function () {
   'use strict';
+
+  const STORAGE = {
+    highScore: 'gravityBlocksHighScore',
+    legacyHighScore: 'blockFallHighScore',
+    settingsPrefix: 'gravityBlocksSetting:',
+    legacySettingsPrefix: 'blockFallSetting:'
+  };
+
+  function getStoredBoolean(key, fallback) {
+    try {
+      const current = localStorage.getItem(`${STORAGE.settingsPrefix}${key}`);
+      if (current !== null) return current === 'true';
+      const legacy = localStorage.getItem(`${STORAGE.legacySettingsPrefix}${key}`);
+      if (legacy !== null) return legacy === 'true';
+      return fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  function setStoredBoolean(key, value) {
+    try {
+      localStorage.setItem(`${STORAGE.settingsPrefix}${key}`, String(value));
+    } catch (_) {
+      // Ignore storage errors so gameplay continues.
+    }
+  }
+
+  function setOverlayVisible(el, visible) {
+    if (!el) return;
+    el.hidden = !visible;
+    el.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  }
 
   // Wait for DOM
   if (document.readyState === 'loading') {
@@ -14,6 +47,7 @@
   function init() {
     const introSplash = document.getElementById('introSplash');
     const playBtn = document.getElementById('playBtn');
+    const fallingBlocks = document.getElementById('fallingBlocks');
 
     // UI Buttons
     const restartBtn = document.getElementById('restartBtn');
@@ -25,14 +59,61 @@
     const resumeBtn = document.getElementById('resumeBtn');
     const settingsPanel = document.getElementById('settingsPanel');
     const pauseOverlay = document.getElementById('pauseOverlay');
+    const toggleGhost = document.getElementById('toggleGhost');
+    const toggleSound = document.getElementById('toggleSound');
+    const toggleGrid = document.getElementById('toggleGrid');
+
+    function spawnIntroBlock() {
+      if (!fallingBlocks || !document.body.contains(fallingBlocks)) return;
+
+      const piece = document.createElement('div');
+      const colors = ['#00F0F0', '#F0F000', '#A000F0', '#00F000', '#F00000', '#0000F0', '#F0A000'];
+      const size = 20 + Math.floor(Math.random() * 24);
+      const duration = 4 + Math.random() * 5;
+      const delay = Math.random() * 0.6;
+
+      piece.className = 'block-piece';
+      piece.style.left = `${Math.random() * 100}%`;
+      piece.style.top = '-80px';
+      piece.style.width = `${size}px`;
+      piece.style.height = `${size}px`;
+      piece.style.color = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.background = 'currentColor';
+      piece.style.animationDuration = `${duration}s`;
+      piece.style.animationDelay = `${delay}s`;
+
+      fallingBlocks.appendChild(piece);
+      piece.addEventListener('animationend', () => piece.remove(), { once: true });
+    }
+
+    let introTimer = null;
+    if (fallingBlocks) {
+      for (let i = 0; i < 20; i++) {
+        setTimeout(spawnIntroBlock, i * 120);
+      }
+      introTimer = setInterval(spawnIntroBlock, 260);
+    }
+
+    if (toggleGhost) toggleGhost.checked = getStoredBoolean('ghost', true);
+    if (toggleSound) toggleSound.checked = getStoredBoolean('sound', true);
+    if (toggleGrid) toggleGrid.checked = getStoredBoolean('grid', true);
+    setOverlayVisible(pauseOverlay, false);
 
     fitStage();
     window.addEventListener('resize', fitStage, { passive: true });
     window.addEventListener('orientationchange', fitStage);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', fitStage, { passive: true });
+      window.visualViewport.addEventListener('scroll', fitStage, { passive: true });
+    }
 
     // Start Game Flow
     if (playBtn) {
       playBtn.addEventListener('click', () => {
+        if (introTimer) {
+          clearInterval(introTimer);
+          introTimer = null;
+        }
         if (introSplash) {
           introSplash.style.transition = 'opacity 0.5s';
           introSplash.style.opacity = '0';
@@ -64,25 +145,44 @@
 
     if (settingsBtn) settingsBtn.addEventListener('click', () => {
       window.pauseGame(true);
-      if (settingsPanel) settingsPanel.hidden = false;
+      setOverlayVisible(settingsPanel, true);
     });
 
     if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => {
-      if (settingsPanel) settingsPanel.hidden = true;
+      setOverlayVisible(settingsPanel, false);
       window.pauseGame(false);
     });
 
     if (bombBtn) bombBtn.addEventListener('click', () => window.useBomb());
 
     if (speedBtn) speedBtn.addEventListener('click', () => window.toggleSpeed());
+
+    if (toggleGhost) toggleGhost.addEventListener('change', () => {
+      if (typeof window.setGameSetting === 'function') {
+        window.setGameSetting('ghost', toggleGhost.checked);
+      }
+    });
+
+    if (toggleSound) toggleSound.addEventListener('change', () => {
+      if (typeof window.setGameSetting === 'function') {
+        window.setGameSetting('sound', toggleSound.checked);
+      }
+    });
+
+    if (toggleGrid) toggleGrid.addEventListener('change', () => {
+      if (typeof window.setGameSetting === 'function') {
+        window.setGameSetting('grid', toggleGrid.checked);
+      }
+    });
   }
 
   // Uniform scaler: scales the fixed 500x1000 stage to fit viewport safely
   function fitStage() {
     const stage = document.getElementById('stage');
     if (!stage) return;
-    const vw = window.innerWidth || document.documentElement.clientWidth || 500;
-    const vh = window.innerHeight || document.documentElement.clientHeight || 1000;
+    const vv = window.visualViewport;
+    const vw = (vv && vv.width) || window.innerWidth || document.documentElement.clientWidth || 500;
+    const vh = (vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 1000;
     const header = document.querySelector('header');
     const controls = document.querySelector('.mobile-controls');
     const headerH = header ? Math.ceil(header.getBoundingClientRect().height) : 0;
@@ -107,6 +207,7 @@
 
     const ctx = canvas.getContext('2d');
     const holdCtx = holdCanvas ? holdCanvas.getContext('2d') : null;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
 
     // Fixed canvas sizing (stable)
     const BLOCK_SIZE = 50;
@@ -149,7 +250,7 @@
       x: 0,
       y: 0,
       score: 0,
-      highScore: parseInt(localStorage.getItem('blockFallHighScore')) || 0,
+      highScore: parseInt(localStorage.getItem(STORAGE.highScore) || localStorage.getItem(STORAGE.legacyHighScore), 10) || 0,
       lines: 0,
       level: 1,
       power: 0, // 0 to 100
@@ -157,8 +258,107 @@
       running: true,
       paused: false,
       dropInterval: 1000,
-      speedMultiplier: 1
+      speedMultiplier: 1,
+      settings: {
+        ghost: true,
+        sound: true,
+        grid: true
+      }
     };
+
+    state.settings.ghost = getStoredBoolean('ghost', true);
+    state.settings.sound = getStoredBoolean('sound', true);
+    state.settings.grid = getStoredBoolean('grid', true);
+
+    let audioCtx = null;
+    let gameOverSfxPlayed = false;
+    let lastMoveSfxAt = 0;
+
+    function ensureAudioContext() {
+      if (!AudioCtx) return null;
+      if (!audioCtx) {
+        try {
+          audioCtx = new AudioCtx();
+        } catch (_) {
+          return null;
+        }
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => { });
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, duration, type = 'square', gainValue = 0.03, when = 0) {
+      if (!state.settings.sound) return;
+      const ac = ensureAudioContext();
+      if (!ac) return;
+
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      const start = ac.currentTime + when;
+      const end = start + duration;
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(gainValue, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start(start);
+      osc.stop(end + 0.02);
+    }
+
+    function playSfx(name, data) {
+      if (!state.settings.sound) return;
+
+      switch (name) {
+        case 'move': {
+          const now = performance.now();
+          if (now - lastMoveSfxAt < 40) return;
+          lastMoveSfxAt = now;
+          playTone(240, 0.03, 'square', 0.013);
+          break;
+        }
+        case 'rotate':
+          playTone(520, 0.04, 'triangle', 0.018);
+          break;
+        case 'lock':
+          playTone(130, 0.06, 'square', 0.02);
+          break;
+        case 'hardDrop':
+          playTone(220, 0.04, 'square', 0.018);
+          playTone(110, 0.09, 'sawtooth', 0.015, 0.03);
+          break;
+        case 'lineClear': {
+          const lines = Math.max(1, Math.min(4, Number(data) || 1));
+          const seq = [440, 554, 659, 880].slice(0, lines);
+          seq.forEach((freq, i) => playTone(freq, 0.07, 'triangle', 0.02, i * 0.035));
+          break;
+        }
+        case 'hold':
+          playTone(300, 0.05, 'triangle', 0.016);
+          break;
+        case 'bomb':
+          playTone(95, 0.16, 'sawtooth', 0.03);
+          playTone(70, 0.2, 'triangle', 0.02, 0.03);
+          break;
+        case 'pause':
+          playTone(380, 0.05, 'square', 0.015);
+          break;
+        case 'resume':
+          playTone(520, 0.05, 'square', 0.015);
+          break;
+        case 'gameOver':
+          playTone(294, 0.1, 'triangle', 0.02);
+          playTone(247, 0.12, 'triangle', 0.02, 0.1);
+          playTone(196, 0.16, 'triangle', 0.02, 0.22);
+          break;
+      }
+    }
 
     // --- Core Logic ---
 
@@ -176,6 +376,7 @@
       state.paused = false;
       state.dropInterval = 1000;
       state.speedMultiplier = 1;
+      gameOverSfxPlayed = false;
 
       // Fill next queue
       for (let i = 0; i < 3; i++) state.nextQueue.push(randomPiece());
@@ -190,11 +391,15 @@
       if (!state.running) return;
       state.paused = !state.paused;
       const overlay = document.getElementById('pauseOverlay');
-      if (overlay) overlay.hidden = !state.paused;
+      setOverlayVisible(overlay, state.paused);
+      playSfx(state.paused ? 'pause' : 'resume');
     };
     window.pauseGame = (bool) => {
       if (!state.running) return;
       state.paused = bool;
+      const overlay = document.getElementById('pauseOverlay');
+      setOverlayVisible(overlay, state.paused);
+      playSfx(state.paused ? 'pause' : 'resume');
     };
     window.useBomb = () => {
       if (!state.running || state.paused || state.bombs <= 0) return;
@@ -205,11 +410,19 @@
       state.grid.unshift(Array(COLS).fill(0));
       updateHUD();
       render();
+      playSfx('bomb');
     };
     window.toggleSpeed = () => {
       state.speedMultiplier++;
       if (state.speedMultiplier > 5) state.speedMultiplier = 1;
       updateHUD();
+    };
+    window.setGameSetting = (key, value) => {
+      if (!Object.prototype.hasOwnProperty.call(state.settings, key)) return;
+      state.settings[key] = !!value;
+      setStoredBoolean(key, state.settings[key]);
+      if (state.settings.sound) ensureAudioContext();
+      render();
     };
 
     function randomPiece() {
@@ -231,6 +444,10 @@
       if (collides(state.x, state.y)) {
         state.running = false;
         saveHighScore();
+        if (!gameOverSfxPlayed) {
+          playSfx('gameOver');
+          gameOverSfxPlayed = true;
+        }
       }
       renderNextQueue();
     }
@@ -252,6 +469,7 @@
 
       state.canHold = false;
       renderHold();
+      playSfx('hold');
     }
 
     function collides(x, y) {
@@ -319,6 +537,7 @@
           state.dropInterval = Math.max(100, 1000 - (state.level - 1) * 100);
         }
 
+        playSfx('lineClear', linesCleared);
         updateHUD();
       }
     }
@@ -326,7 +545,7 @@
     function saveHighScore() {
       if (state.score > state.highScore) {
         state.highScore = state.score;
-        localStorage.setItem('blockFallHighScore', state.highScore);
+        localStorage.setItem(STORAGE.highScore, state.highScore);
         updateHUD();
       }
     }
@@ -338,6 +557,7 @@
       if (!collides(newX, newY)) {
         state.x = newX;
         state.y = newY;
+        if (dx !== 0) playSfx('move');
         return true;
       }
       return false;
@@ -345,6 +565,7 @@
 
     function drop() {
       if (!move(0, 1)) {
+        playSfx('lock');
         merge();
         clearLines();
         spawn();
@@ -353,6 +574,7 @@
 
     function hardDrop() {
       while (move(0, 1)) { }
+      playSfx('hardDrop');
       merge();
       clearLines();
       spawn();
@@ -381,6 +603,7 @@
         else if (!collides(state.x + 1, state.y)) state.x += 1;
         else state.current.shape = oldShape;
       }
+      if (state.current.shape !== oldShape) playSfx('rotate');
     }
 
     // --- Rendering ---
@@ -442,13 +665,15 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Grid (subtle)
-      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-      ctx.lineWidth = 1;
-      for (let x = 0; x <= COLS; x++) {
-        ctx.beginPath(); ctx.moveTo(x * BLOCK_SIZE, 0); ctx.lineTo(x * BLOCK_SIZE, ROWS * BLOCK_SIZE); ctx.stroke();
-      }
-      for (let y = 0; y <= ROWS; y++) {
-        ctx.beginPath(); ctx.moveTo(0, y * BLOCK_SIZE); ctx.lineTo(COLS * BLOCK_SIZE, y * BLOCK_SIZE); ctx.stroke();
+      if (state.settings.grid) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= COLS; x++) {
+          ctx.beginPath(); ctx.moveTo(x * BLOCK_SIZE, 0); ctx.lineTo(x * BLOCK_SIZE, ROWS * BLOCK_SIZE); ctx.stroke();
+        }
+        for (let y = 0; y <= ROWS; y++) {
+          ctx.beginPath(); ctx.moveTo(0, y * BLOCK_SIZE); ctx.lineTo(COLS * BLOCK_SIZE, y * BLOCK_SIZE); ctx.stroke();
+        }
       }
 
       // Placed blocks
@@ -461,7 +686,7 @@
       }
 
       // Ghost
-      if (state.current) {
+      if (state.current && state.settings.ghost) {
         const shape = state.current.shape;
         const gy = ghostYFor(state.x, state.y, shape);
         for (let row = 0; row < shape.length; row++) {
@@ -573,7 +798,9 @@
     }
 
     // Input handling
+    window.addEventListener('pointerdown', ensureAudioContext, { once: true });
     document.addEventListener('keydown', (e) => {
+      ensureAudioContext();
       if (!state.running || state.paused) return;
 
       switch (e.key) {
@@ -586,7 +813,8 @@
         case 'p': case 'P':
           state.paused = !state.paused;
           const overlay = document.getElementById('pauseOverlay');
-          if (overlay) overlay.hidden = !state.paused;
+          setOverlayVisible(overlay, state.paused);
+          playSfx(state.paused ? 'pause' : 'resume');
           break;
       }
       render();
