@@ -7,8 +7,9 @@
   const Storage = window.GravityBlocksStorage;
   const Viewport = window.GravityBlocksViewport;
   const AudioPlatform = window.GravityBlocksAudio;
+  const HUDPlatform = window.GravityBlocksHUD;
 
-  if (!Storage || !Viewport || !AudioPlatform) {
+  if (!Storage || !Viewport || !AudioPlatform || !HUDPlatform) {
     console.error('GravityBlocks platform modules are missing.');
     return;
   }
@@ -201,16 +202,7 @@
     const backgroundCtx = backgroundLayer.getContext('2d');
     backgroundLayer.width = canvas.width;
     backgroundLayer.height = canvas.height;
-    const hudEls = {
-      score: document.getElementById('score'),
-      lines: document.getElementById('lines'),
-      level: document.getElementById('level'),
-      high: document.getElementById('highScore'),
-      bombs: document.getElementById('bombs'),
-      power: document.getElementById('powerBar'),
-      bombBtn: document.getElementById('bombBtn'),
-      speedBtn: document.getElementById('speedBtn')
-    };
+    const hud = HUDPlatform.createHUD();
 
     // Game State
     let state = {
@@ -245,7 +237,6 @@
 
     let gameOverSfxPlayed = false;
     let lineFlash = 0;
-    const hudPrev = { score: null, lines: null, level: null, high: null, bombs: null };
 
     function buildBackgroundLayer() {
       if (!backgroundCtx) return;
@@ -687,26 +678,7 @@
     }
 
     function updateHUD() {
-      const setValue = (el, key, value) => {
-        if (!el) return;
-        if (hudPrev[key] !== value) {
-          el.textContent = value;
-          el.classList.remove('bump');
-          void el.offsetWidth;
-          el.classList.add('bump');
-          hudPrev[key] = value;
-        }
-      };
-
-      setValue(hudEls.score, 'score', state.score);
-      setValue(hudEls.lines, 'lines', state.lines);
-      setValue(hudEls.level, 'level', state.level);
-      setValue(hudEls.high, 'high', state.highScore);
-      setValue(hudEls.bombs, 'bombs', state.bombs);
-
-      if (hudEls.power) hudEls.power.style.width = `${state.power}%`;
-      if (hudEls.bombBtn) hudEls.bombBtn.disabled = state.bombs <= 0;
-      if (hudEls.speedBtn) hudEls.speedBtn.textContent = `Speed: ${state.speedMultiplier}x`;
+      hud.update(state);
     }
 
     // Input handling
