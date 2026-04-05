@@ -8,12 +8,14 @@
   const Viewport = window.GravityBlocksViewport;
   const AudioPlatform = window.GravityBlocksAudio;
   const HUDPlatform = window.GravityBlocksHUD;
+  const SettingsUIPlatform = window.GravityBlocksSettingsUI;
+  const ControlsUIPlatform = window.GravityBlocksControlsUI;
   const BoardRendererPlatform = window.GravityBlocksBoardRenderer;
   const PreviewsRendererPlatform = window.GravityBlocksPreviewsRenderer;
   const PiecesCorePlatform = window.GravityBlocksPiecesCore;
   const ScoringCorePlatform = window.GravityBlocksScoringCore;
 
-  if (!Storage || !Viewport || !AudioPlatform || !HUDPlatform || !BoardRendererPlatform || !PreviewsRendererPlatform || !PiecesCorePlatform || !ScoringCorePlatform) {
+  if (!Storage || !Viewport || !AudioPlatform || !HUDPlatform || !SettingsUIPlatform || !ControlsUIPlatform || !BoardRendererPlatform || !PreviewsRendererPlatform || !PiecesCorePlatform || !ScoringCorePlatform) {
     console.error('GravityBlocks platform modules are missing.');
     return;
   }
@@ -35,20 +37,6 @@
     const introSplash = document.getElementById('introSplash');
     const playBtn = document.getElementById('playBtn');
     const fallingBlocks = document.getElementById('fallingBlocks');
-
-    // UI Buttons
-    const restartBtn = document.getElementById('restartBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const closeSettingsBtn = document.getElementById('closeSettings');
-    const bombBtn = document.getElementById('bombBtn');
-    const speedBtn = document.getElementById('speedBtn');
-    const resumeBtn = document.getElementById('resumeBtn');
-    const settingsPanel = document.getElementById('settingsPanel');
-    const pauseOverlay = document.getElementById('pauseOverlay');
-    const toggleGhost = document.getElementById('toggleGhost');
-    const toggleSound = document.getElementById('toggleSound');
-    const toggleGrid = document.getElementById('toggleGrid');
 
     function spawnIntroBlock() {
       if (!fallingBlocks || !document.body.contains(fallingBlocks)) return;
@@ -81,10 +69,10 @@
       introTimer = setInterval(spawnIntroBlock, 260);
     }
 
-    if (toggleGhost) toggleGhost.checked = Storage.getStoredBoolean('ghost', true);
-    if (toggleSound) toggleSound.checked = Storage.getStoredBoolean('sound', true);
-    if (toggleGrid) toggleGrid.checked = Storage.getStoredBoolean('grid', true);
-    setOverlayVisible(pauseOverlay, false);
+    SettingsUIPlatform.initSettingsUI({
+      storage: Storage,
+      setOverlayVisible
+    });
 
     const scheduleFitStage = Viewport.bindStageAutoFit();
     scheduleFitStage();
@@ -115,47 +103,6 @@
       startGame();
     }
 
-    // Global UI Event Listeners (assigned once)
-    if (restartBtn) restartBtn.addEventListener('click', () => {
-      if (confirm('Restart game?')) {
-        window.resetGame();
-      }
-    });
-
-    if (pauseBtn) pauseBtn.addEventListener('click', () => window.togglePause());
-    if (resumeBtn) resumeBtn.addEventListener('click', () => window.togglePause());
-
-    if (settingsBtn) settingsBtn.addEventListener('click', () => {
-      window.pauseGame(true);
-      setOverlayVisible(settingsPanel, true);
-    });
-
-    if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => {
-      setOverlayVisible(settingsPanel, false);
-      window.pauseGame(false);
-    });
-
-    if (bombBtn) bombBtn.addEventListener('click', () => window.useBomb());
-
-    if (speedBtn) speedBtn.addEventListener('click', () => window.toggleSpeed());
-
-    if (toggleGhost) toggleGhost.addEventListener('change', () => {
-      if (typeof window.setGameSetting === 'function') {
-        window.setGameSetting('ghost', toggleGhost.checked);
-      }
-    });
-
-    if (toggleSound) toggleSound.addEventListener('change', () => {
-      if (typeof window.setGameSetting === 'function') {
-        window.setGameSetting('sound', toggleSound.checked);
-      }
-    });
-
-    if (toggleGrid) toggleGrid.addEventListener('change', () => {
-      if (typeof window.setGameSetting === 'function') {
-        window.setGameSetting('grid', toggleGrid.checked);
-      }
-    });
   }
 
   function startGame() {
@@ -405,10 +352,6 @@
       scoringCore.clearLines();
     }
 
-    function saveHighScore() {
-      scoringCore.saveHighScore();
-    }
-
     function move(dx, dy) {
       const newX = state.x + dx;
       const newY = state.y + dy;
@@ -475,60 +418,20 @@
       hud.update(state);
     }
 
-    // Input handling
-    window.addEventListener('pointerdown', audio.ensureAudioContext, { once: true });
-    document.addEventListener('keydown', (e) => {
-      audio.ensureAudioContext();
-      if (!state.running || state.paused) return;
-
-      switch (e.key) {
-        case 'ArrowLeft': e.preventDefault(); move(-1, 0); break;
-        case 'ArrowRight': e.preventDefault(); move(1, 0); break;
-        case 'ArrowDown': e.preventDefault(); drop(); break;
-        case 'ArrowUp': e.preventDefault(); rotate(); break;
-        case ' ': e.preventDefault(); hardDrop(); break;
-        case 'c': case 'C': case 'Shift': e.preventDefault(); holdPiece(); break;
-        case 'p': case 'P':
-          state.paused = !state.paused;
-          const overlay = document.getElementById('pauseOverlay');
-          setOverlayVisible(overlay, state.paused);
-          playSfx(state.paused ? 'pause' : 'resume');
-          break;
+    ControlsUIPlatform.bindGameControls({
+      ensureAudioContext: audio.ensureAudioContext,
+      getState: () => state,
+      actions: {
+        move,
+        drop,
+        rotate,
+        hardDrop,
+        holdPiece,
+        togglePause: () => window.togglePause(),
+        useBomb: () => window.useBomb(),
+        render
       }
-      render();
     });
-
-    // Mobile controls
-    const btnLeft = document.getElementById('btn-left');
-    const btnRight = document.getElementById('btn-right');
-    const btnRotate = document.getElementById('btn-rotate');
-    const btnSoft = document.getElementById('btn-soft');
-    const btnHard = document.getElementById('btn-hard');
-    const btnBombMobile = document.getElementById('btn-bomb');
-
-    function addHold(btn, fn, interval = 100) {
-      if (!btn) return;
-      let t = null;
-      const start = (e) => {
-        e.preventDefault();
-        fn();
-        render();
-        if (t) clearInterval(t);
-        t = setInterval(() => { fn(); render(); }, interval);
-      };
-      const stop = () => { if (t) { clearInterval(t); t = null; } };
-      btn.addEventListener('pointerdown', start);
-      window.addEventListener('pointerup', stop);
-      window.addEventListener('pointercancel', stop);
-      btn.addEventListener('click', (e) => e.preventDefault());
-    }
-
-    addHold(btnLeft, () => move(-1, 0));
-    addHold(btnRight, () => move(1, 0));
-    addHold(btnSoft, () => drop());
-    if (btnRotate) btnRotate.addEventListener('click', () => { rotate(); render(); });
-    if (btnHard) btnHard.addEventListener('click', () => { hardDrop(); render(); });
-    if (btnBombMobile) btnBombMobile.addEventListener('click', () => window.useBomb());
 
     // Game loop
     let lastTime = 0;

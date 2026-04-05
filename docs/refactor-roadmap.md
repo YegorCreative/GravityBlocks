@@ -33,13 +33,15 @@ js/
 ```
 
 ## Migration Steps
-1. Extract `platform/storage.js` and route all storage reads/writes through it.
-2. Extract `platform/viewport.js` and keep `fitStage` behavior stable.
-3. Extract `platform/audio.js` with current SFX/haptic API.
-4. Extract `render/board.js` and `render/previews.js` (no behavior changes).
-5. Extract `core/scoring.js` and `core/pieces.js`.
-6. Move controls/HUD/settings into `ui/*` modules.
-7. Keep `js/game.js` as an orchestrator only.
+1. [x] Extract `platform/storage.js` and route all storage reads/writes through it.
+2. [x] Extract `platform/viewport.js` and keep `fitStage` behavior stable.
+3. [x] Extract `platform/audio.js` with current SFX/haptic API.
+4. [x] Extract `render/board.js` and `render/previews.js` (no behavior changes).
+5. [x] Extract `core/scoring.js` and `core/pieces.js`.
+6. [x] Move controls/HUD/settings into `ui/*` modules.
+7. [ ] Keep `js/game.js` as an orchestrator only.
+
+Status: Steps 1-6 are complete on `main`; Step 7 is the remaining cleanup/orchestration pass.
 
 ## Safety Rules
 - Refactor one module at a time.
