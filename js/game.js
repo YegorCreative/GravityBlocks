@@ -10,8 +10,10 @@
   const HUDPlatform = window.GravityBlocksHUD;
   const BoardRendererPlatform = window.GravityBlocksBoardRenderer;
   const PreviewsRendererPlatform = window.GravityBlocksPreviewsRenderer;
+  const PiecesCorePlatform = window.GravityBlocksPiecesCore;
+  const ScoringCorePlatform = window.GravityBlocksScoringCore;
 
-  if (!Storage || !Viewport || !AudioPlatform || !HUDPlatform || !BoardRendererPlatform || !PreviewsRendererPlatform) {
+  if (!Storage || !Viewport || !AudioPlatform || !HUDPlatform || !BoardRendererPlatform || !PreviewsRendererPlatform || !PiecesCorePlatform || !ScoringCorePlatform) {
     console.error('GravityBlocks platform modules are missing.');
     return;
   }
@@ -249,6 +251,38 @@
       colors: COLORS
     });
 
+    const scoringCore = ScoringCorePlatform.createScoringCore({
+      state,
+      rows: ROWS,
+      cols: COLS,
+      onLinesCleared: (linesCleared) => {
+        boardRenderer.flashForLines(linesCleared);
+        playSfx('lineClear', linesCleared);
+        updateHUD();
+      },
+      onHighScore: (highScore) => {
+        Storage.setHighScore(highScore);
+        updateHUD();
+      }
+    });
+
+    const piecesCore = PiecesCorePlatform.createPiecesCore({
+      state,
+      types: TYPES,
+      shapes: SHAPES,
+      cols: COLS,
+      collides,
+      onGameOver: () => {
+        scoringCore.saveHighScore();
+        if (!gameOverSfxPlayed) {
+          playSfx('gameOver');
+          gameOverSfxPlayed = true;
+        }
+      },
+      onQueueChanged: () => previewsRenderer.renderNextQueue(state),
+      onHoldChanged: () => previewsRenderer.renderHold(state)
+    });
+
     boardRenderer.buildBackgroundLayer();
 
     let gameOverSfxPlayed = false;
@@ -276,10 +310,8 @@
       state.speedMultiplier = 1;
       gameOverSfxPlayed = false;
 
-      // Fill next queue
-      for (let i = 0; i < 3; i++) state.nextQueue.push(randomPiece());
-
-      spawn();
+      piecesCore.fillInitialQueue(3);
+      piecesCore.spawn();
       updateHUD();
     }
 
@@ -324,51 +356,14 @@
       render();
     };
 
-    function randomPiece() {
-      const type = TYPES[Math.floor(Math.random() * TYPES.length)];
-      return { type, shape: SHAPES[type] };
-    }
-
     function spawn() {
-      if (state.nextQueue.length === 0) {
-        state.nextQueue.push(randomPiece());
-      }
-      state.current = state.nextQueue.shift();
-      state.nextQueue.push(randomPiece());
-
-      state.x = Math.floor((COLS - state.current.shape[0].length) / 2);
-      state.y = 0;
-      state.canHold = true;
-
-      if (collides(state.x, state.y)) {
-        state.running = false;
-        saveHighScore();
-        if (!gameOverSfxPlayed) {
-          playSfx('gameOver');
-          gameOverSfxPlayed = true;
-        }
-      }
-      previewsRenderer.renderNextQueue(state);
+      piecesCore.spawn();
     }
 
     function holdPiece() {
-      if (!state.canHold || !state.running || state.paused) return;
-
-      if (state.hold) {
-        const temp = state.current;
-        state.current = state.hold;
-        state.hold = temp;
-        // Reset position
-        state.x = Math.floor((COLS - state.current.shape[0].length) / 2);
-        state.y = 0;
-      } else {
-        state.hold = state.current;
-        spawn();
+      if (piecesCore.holdPiece()) {
+        playSfx('hold');
       }
-
-      state.canHold = false;
-      previewsRenderer.renderHold(state);
-      playSfx('hold');
     }
 
     function collides(x, y) {
@@ -407,47 +402,11 @@
     }
 
     function clearLines() {
-      let linesCleared = 0;
-      for (let row = ROWS - 1; row >= 0; row--) {
-        if (state.grid[row].every(cell => cell !== 0)) {
-          state.grid.splice(row, 1);
-          state.grid.unshift(Array(COLS).fill(0));
-          linesCleared++;
-          row++;
-        }
-      }
-      if (linesCleared > 0) {
-        const points = [0, 100, 300, 500, 800];
-        state.score += points[linesCleared] * state.level;
-        state.lines += linesCleared;
-
-        // Power meter logic
-        state.power += linesCleared * 10;
-        if (state.power >= 100) {
-          state.power -= 100;
-          state.bombs++;
-        }
-        if (state.power > 100) state.power = 100;
-
-        // Level up every 10 lines
-        const newLevel = Math.floor(state.lines / 10) + 1;
-        if (newLevel > state.level) {
-          state.level = newLevel;
-          state.dropInterval = Math.max(100, 1000 - (state.level - 1) * 100);
-        }
-
-        boardRenderer.flashForLines(linesCleared);
-        playSfx('lineClear', linesCleared);
-        updateHUD();
-      }
+      scoringCore.clearLines();
     }
 
     function saveHighScore() {
-      if (state.score > state.highScore) {
-        state.highScore = state.score;
-        Storage.setHighScore(state.highScore);
-        updateHUD();
-      }
+      scoringCore.saveHighScore();
     }
 
     function move(dx, dy) {
