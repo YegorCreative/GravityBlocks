@@ -508,57 +508,6 @@
 
     // --- Rendering ---
 
-    function drawBlock(ctx, x, y, color, size = BLOCK_SIZE) {
-      // Main block
-      ctx.fillStyle = color;
-      ctx.fillRect(x * size, y * size, size, size);
-
-      // Bevel effect (Classic Tetris style)
-      // Top & Left (Light)
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.beginPath();
-      ctx.moveTo(x * size, y * size + size);
-      ctx.lineTo(x * size, y * size);
-      ctx.lineTo(x * size + size, y * size);
-      ctx.lineTo(x * size + size - 4, y * size + 4);
-      ctx.lineTo(x * size + 4, y * size + 4);
-      ctx.lineTo(x * size + 4, y * size + size - 4);
-      ctx.fill();
-
-      // Bottom & Right (Dark)
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
-      ctx.beginPath();
-      ctx.moveTo(x * size, y * size + size);
-      ctx.lineTo(x * size + size, y * size + size);
-      ctx.lineTo(x * size + size, y * size);
-      ctx.lineTo(x * size + size - 4, y * size + 4);
-      ctx.lineTo(x * size + size - 4, y * size + size - 4);
-      ctx.lineTo(x * size + 4, y * size + size - 4);
-      ctx.fill();
-
-      // Inner square
-      ctx.fillStyle = 'rgba(0,0,0,0.1)';
-      ctx.fillRect(x * size + 4, y * size + 4, size - 8, size - 8);
-    }
-
-    function drawGhostBlock(x, y, color) {
-      ctx.save();
-      ctx.globalAlpha = 0.2;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x * BLOCK_SIZE + 2, y * BLOCK_SIZE + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4);
-      ctx.restore();
-    }
-
-    function ghostYFor(x, y, shape) {
-      let gy = y;
-      while (true) {
-        if (collides(x, gy + 1)) break;
-        gy++;
-      }
-      return gy;
-    }
-
     function render() {
       boardRenderer.render();
     }
