@@ -4,31 +4,12 @@
 (function () {
   'use strict';
 
-  const STORAGE = {
-    highScore: 'gravityBlocksHighScore',
-    legacyHighScore: 'blockFallHighScore',
-    settingsPrefix: 'gravityBlocksSetting:',
-    legacySettingsPrefix: 'blockFallSetting:'
-  };
+  const Storage = window.GravityBlocksStorage;
+  const Viewport = window.GravityBlocksViewport;
 
-  function getStoredBoolean(key, fallback) {
-    try {
-      const current = localStorage.getItem(`${STORAGE.settingsPrefix}${key}`);
-      if (current !== null) return current === 'true';
-      const legacy = localStorage.getItem(`${STORAGE.legacySettingsPrefix}${key}`);
-      if (legacy !== null) return legacy === 'true';
-      return fallback;
-    } catch (_) {
-      return fallback;
-    }
-  }
-
-  function setStoredBoolean(key, value) {
-    try {
-      localStorage.setItem(`${STORAGE.settingsPrefix}${key}`, String(value));
-    } catch (_) {
-      // Ignore storage errors so gameplay continues.
-    }
+  if (!Storage || !Viewport) {
+    console.error('GravityBlocks platform modules are missing.');
+    return;
   }
 
   function setOverlayVisible(el, visible) {
@@ -94,27 +75,13 @@
       introTimer = setInterval(spawnIntroBlock, 260);
     }
 
-    if (toggleGhost) toggleGhost.checked = getStoredBoolean('ghost', true);
-    if (toggleSound) toggleSound.checked = getStoredBoolean('sound', true);
-    if (toggleGrid) toggleGrid.checked = getStoredBoolean('grid', true);
+    if (toggleGhost) toggleGhost.checked = Storage.getStoredBoolean('ghost', true);
+    if (toggleSound) toggleSound.checked = Storage.getStoredBoolean('sound', true);
+    if (toggleGrid) toggleGrid.checked = Storage.getStoredBoolean('grid', true);
     setOverlayVisible(pauseOverlay, false);
 
-    let fitStageRaf = 0;
-    const scheduleFitStage = () => {
-      if (fitStageRaf) return;
-      fitStageRaf = requestAnimationFrame(() => {
-        fitStageRaf = 0;
-        fitStage();
-      });
-    };
-
+    const scheduleFitStage = Viewport.bindStageAutoFit();
     scheduleFitStage();
-    window.addEventListener('resize', scheduleFitStage, { passive: true });
-    window.addEventListener('orientationchange', scheduleFitStage, { passive: true });
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', scheduleFitStage, { passive: true });
-      window.visualViewport.addEventListener('scroll', scheduleFitStage, { passive: true });
-    }
 
     // Start Game Flow
     if (playBtn) {
@@ -183,25 +150,6 @@
         window.setGameSetting('grid', toggleGrid.checked);
       }
     });
-  }
-
-  // Uniform scaler: scales the fixed 500x1000 stage to fit viewport safely
-  function fitStage() {
-    const stage = document.getElementById('stage');
-    if (!stage) return;
-    const vv = window.visualViewport;
-    const vw = (vv && vv.width) || window.innerWidth || document.documentElement.clientWidth || 500;
-    const vh = (vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 1000;
-    const header = document.querySelector('header');
-    const controls = document.querySelector('.mobile-controls');
-    const headerH = header ? Math.ceil(header.getBoundingClientRect().height) : 0;
-    const controlsVisible = controls && getComputedStyle(controls).display !== 'none';
-    const controlsH = controlsVisible ? Math.ceil(controls.getBoundingClientRect().height) : 0;
-    const vPad = 12; // breathing room
-    const availW = Math.max(200, vw - 24);
-    const availH = Math.max(300, vh - headerH - controlsH - vPad * 2);
-    const s = Math.max(0.2, Math.min(availW / 500, availH / 1000));
-    stage.style.transform = `scale(${s})`;
   }
 
   function startGame() {
@@ -273,7 +221,7 @@
       x: 0,
       y: 0,
       score: 0,
-      highScore: parseInt(localStorage.getItem(STORAGE.highScore) || localStorage.getItem(STORAGE.legacyHighScore), 10) || 0,
+      highScore: Storage.getHighScore(),
       lines: 0,
       level: 1,
       power: 0, // 0 to 100
@@ -289,9 +237,9 @@
       }
     };
 
-    state.settings.ghost = getStoredBoolean('ghost', true);
-    state.settings.sound = getStoredBoolean('sound', true);
-    state.settings.grid = getStoredBoolean('grid', true);
+    state.settings.ghost = Storage.getStoredBoolean('ghost', true);
+    state.settings.sound = Storage.getStoredBoolean('sound', true);
+    state.settings.grid = Storage.getStoredBoolean('grid', true);
     buildBackgroundLayer();
 
     let audioCtx = null;
@@ -480,7 +428,7 @@
     window.setGameSetting = (key, value) => {
       if (!Object.prototype.hasOwnProperty.call(state.settings, key)) return;
       state.settings[key] = !!value;
-      setStoredBoolean(key, state.settings[key]);
+      Storage.setStoredBoolean(key, state.settings[key]);
       if (state.settings.sound) ensureAudioContext();
       if (key === 'grid') buildBackgroundLayer();
       render();
@@ -607,7 +555,7 @@
     function saveHighScore() {
       if (state.score > state.highScore) {
         state.highScore = state.score;
-        localStorage.setItem(STORAGE.highScore, state.highScore);
+        Storage.setHighScore(state.highScore);
         updateHUD();
       }
     }
