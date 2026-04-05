@@ -8,8 +8,10 @@
   const Viewport = window.GravityBlocksViewport;
   const AudioPlatform = window.GravityBlocksAudio;
   const HUDPlatform = window.GravityBlocksHUD;
+  const BoardRendererPlatform = window.GravityBlocksBoardRenderer;
+  const PreviewsRendererPlatform = window.GravityBlocksPreviewsRenderer;
 
-  if (!Storage || !Viewport || !AudioPlatform || !HUDPlatform) {
+  if (!Storage || !Viewport || !AudioPlatform || !HUDPlatform || !BoardRendererPlatform || !PreviewsRendererPlatform) {
     console.error('GravityBlocks platform modules are missing.');
     return;
   }
@@ -198,10 +200,6 @@
     };
 
     const TYPES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
-    const backgroundLayer = document.createElement('canvas');
-    const backgroundCtx = backgroundLayer.getContext('2d');
-    backgroundLayer.width = canvas.width;
-    backgroundLayer.height = canvas.height;
     const hud = HUDPlatform.createHUD();
 
     // Game State
@@ -233,33 +231,27 @@
     state.settings.ghost = Storage.getStoredBoolean('ghost', true);
     state.settings.sound = Storage.getStoredBoolean('sound', true);
     state.settings.grid = Storage.getStoredBoolean('grid', true);
-    buildBackgroundLayer();
+
+    const boardRenderer = BoardRendererPlatform.createBoardRenderer({
+      canvas,
+      ctx,
+      cols: COLS,
+      rows: ROWS,
+      blockSize: BLOCK_SIZE,
+      colors: COLORS,
+      state
+    });
+
+    const previewsRenderer = PreviewsRendererPlatform.createPreviewsRenderer({
+      holdCanvas,
+      holdCtx,
+      nextQueueDiv,
+      colors: COLORS
+    });
+
+    boardRenderer.buildBackgroundLayer();
 
     let gameOverSfxPlayed = false;
-    let lineFlash = 0;
-
-    function buildBackgroundLayer() {
-      if (!backgroundCtx) return;
-      backgroundCtx.fillStyle = '#0f0f12';
-      backgroundCtx.fillRect(0, 0, backgroundLayer.width, backgroundLayer.height);
-
-      if (state.settings.grid) {
-        backgroundCtx.strokeStyle = 'rgba(255,255,255,0.03)';
-        backgroundCtx.lineWidth = 1;
-        for (let x = 0; x <= COLS; x++) {
-          backgroundCtx.beginPath();
-          backgroundCtx.moveTo(x * BLOCK_SIZE, 0);
-          backgroundCtx.lineTo(x * BLOCK_SIZE, ROWS * BLOCK_SIZE);
-          backgroundCtx.stroke();
-        }
-        for (let y = 0; y <= ROWS; y++) {
-          backgroundCtx.beginPath();
-          backgroundCtx.moveTo(0, y * BLOCK_SIZE);
-          backgroundCtx.lineTo(COLS * BLOCK_SIZE, y * BLOCK_SIZE);
-          backgroundCtx.stroke();
-        }
-      }
-    }
 
     function playSfx(name, data) {
       if (!state.settings.sound) return;
@@ -328,7 +320,7 @@
       state.settings[key] = !!value;
       Storage.setStoredBoolean(key, state.settings[key]);
       if (state.settings.sound) audio.ensureAudioContext();
-      if (key === 'grid') buildBackgroundLayer();
+      if (key === 'grid') boardRenderer.buildBackgroundLayer();
       render();
     };
 
@@ -356,7 +348,7 @@
           gameOverSfxPlayed = true;
         }
       }
-      renderNextQueue();
+      previewsRenderer.renderNextQueue(state);
     }
 
     function holdPiece() {
@@ -375,7 +367,7 @@
       }
 
       state.canHold = false;
-      renderHold();
+      previewsRenderer.renderHold(state);
       playSfx('hold');
     }
 
@@ -444,7 +436,7 @@
           state.dropInterval = Math.max(100, 1000 - (state.level - 1) * 100);
         }
 
-        lineFlash = Math.min(0.42, 0.14 * linesCleared);
+        boardRenderer.flashForLines(linesCleared);
         playSfx('lineClear', linesCleared);
         updateHUD();
       }
@@ -568,113 +560,7 @@
     }
 
     function render() {
-      // Draw cached board background (base + optional grid)
-      ctx.drawImage(backgroundLayer, 0, 0);
-
-      // Placed blocks
-      for (let row = 0; row < ROWS; row++) {
-        for (let col = 0; col < COLS; col++) {
-          if (state.grid[row][col]) {
-            drawBlock(ctx, col, row, COLORS[state.grid[row][col]]);
-          }
-        }
-      }
-
-      // Ghost
-      if (state.current && state.settings.ghost) {
-        const shape = state.current.shape;
-        const gy = ghostYFor(state.x, state.y, shape);
-        for (let row = 0; row < shape.length; row++) {
-          for (let col = 0; col < shape[row].length; col++) {
-            if (shape[row][col]) {
-              drawGhostBlock(state.x + col, gy + row, COLORS[state.current.type]);
-            }
-          }
-        }
-      }
-
-      // Current
-      if (state.current) {
-        const shape = state.current.shape;
-        for (let row = 0; row < shape.length; row++) {
-          for (let col = 0; col < shape[row].length; col++) {
-            if (shape[row][col]) {
-              drawBlock(ctx, state.x + col, state.y + row, COLORS[state.current.type]);
-            }
-          }
-        }
-      }
-
-      // Game Over
-      if (!state.running) {
-        ctx.fillStyle = 'rgba(0,0,0,0.7)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 48px "Press Start 2P"';
-        ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
-        ctx.font = '20px "Press Start 2P"';
-        ctx.fillText('Press Restart', canvas.width / 2, canvas.height / 2 + 50);
-      }
-
-      // Pause
-      if (state.paused) {
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-
-      if (lineFlash > 0) {
-        ctx.fillStyle = `rgba(0, 234, 255, ${lineFlash})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        lineFlash = Math.max(0, lineFlash - 0.025);
-      }
-    }
-
-    function renderHold() {
-      if (!holdCtx) return;
-      holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
-      if (state.hold) {
-        const shape = state.hold.shape;
-        const size = 20;
-        const offsetX = (holdCanvas.width - shape[0].length * size) / 2;
-        const offsetY = (holdCanvas.height - shape.length * size) / 2;
-
-        for (let row = 0; row < shape.length; row++) {
-          for (let col = 0; col < shape[row].length; col++) {
-            if (shape[row][col]) {
-              // Simplified draw for hold/next
-              holdCtx.fillStyle = COLORS[state.hold.type];
-              holdCtx.fillRect(offsetX + col * size, offsetY + row * size, size - 1, size - 1);
-            }
-          }
-        }
-      }
-    }
-
-    function renderNextQueue() {
-      if (!nextQueueDiv) return;
-      nextQueueDiv.innerHTML = '';
-      state.nextQueue.forEach(piece => {
-        const c = document.createElement('canvas');
-        c.width = 80;
-        c.height = 60;
-        const cx = c.getContext('2d');
-        const shape = piece.shape;
-        const size = 15;
-        const offsetX = (c.width - shape[0].length * size) / 2;
-        const offsetY = (c.height - shape.length * size) / 2;
-
-        for (let row = 0; row < shape.length; row++) {
-          for (let col = 0; col < shape[row].length; col++) {
-            if (shape[row][col]) {
-              // Simplified draw for hold/next
-              cx.fillStyle = COLORS[piece.type];
-              cx.fillRect(offsetX + col * size, offsetY + row * size, size - 1, size - 1);
-            }
-          }
-        }
-        nextQueueDiv.appendChild(c);
-      });
+      boardRenderer.render();
     }
 
     function updateHUD() {
