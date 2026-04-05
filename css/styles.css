@@ -564,6 +564,153 @@ canvas#gameBoard {
   }
 }
 
+/* Mobile UX rethink */
+@media (max-width: 900px) {
+  body {
+    align-items: stretch;
+  }
+
+  header {
+    max-width: none;
+    width: 100%;
+    justify-content: center;
+    padding: 10px 12px;
+  }
+
+  header h1 {
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .game-wrapper {
+    width: 100%;
+    max-width: none;
+    padding: 8px 10px 18px;
+    gap: 12px;
+  }
+
+  .board {
+    width: 100%;
+    justify-content: center;
+  }
+
+  #stage {
+    border-width: 8px;
+    border-radius: 8px;
+    box-shadow: 0 0 0 1px #3a3a3a inset, 0 10px 36px rgba(0,0,0,0.5);
+  }
+
+  .hud {
+    grid-column: 1;
+    grid-row: 1;
+    width: min(640px, 100%);
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .board {
+    grid-row: 2;
+  }
+
+  .hud .stat {
+    padding: 8px;
+    min-height: 62px;
+  }
+
+  .hud .stat .label {
+    font-size: 8px;
+    letter-spacing: 0.04em;
+  }
+
+  .hud .stat .value {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  #pauseBtn, #settingsBtn, #speedBtn, #restartBtn, #bombBtn {
+    min-height: 38px;
+    padding: 8px 6px;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .hud-side {
+    top: 46px;
+  }
+
+  .side-panel {
+    width: 78px;
+    padding: 4px;
+  }
+
+  .side-panel .label {
+    font-size: 8px;
+    margin-bottom: 3px;
+  }
+
+  #holdCanvas {
+    width: 66px;
+    height: 66px;
+  }
+
+  .next-queue canvas {
+    width: 66px;
+    height: 48px;
+  }
+
+  .mobile-controls {
+    width: min(640px, 96vw);
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    bottom: max(6px, env(safe-area-inset-bottom));
+    border-radius: 18px;
+  }
+
+  .mobile-controls .grid {
+    gap: 8px;
+  }
+
+  .btn {
+    min-height: 48px;
+    padding: 12px 8px;
+    font-size: 13px;
+    border-radius: 11px;
+  }
+}
+
+@media (max-width: 520px) {
+  .hud {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hud-side.left {
+    display: none;
+  }
+
+  .hud-side.right {
+    right: 4px;
+  }
+
+  .side-panel {
+    width: 72px;
+  }
+
+  .hud-top {
+    padding: 6px 8px 2px;
+  }
+
+  .hud-item .label {
+    font-size: 8px;
+  }
+
+  .hud-item .value {
+    font-size: 12px;
+    margin-top: 3px;
+  }
+}
+
 /* ========================================
    INTRO SPLASH SCREEN
    ======================================== */
