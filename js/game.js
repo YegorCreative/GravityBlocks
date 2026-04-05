@@ -99,12 +99,21 @@
     if (toggleGrid) toggleGrid.checked = getStoredBoolean('grid', true);
     setOverlayVisible(pauseOverlay, false);
 
-    fitStage();
-    window.addEventListener('resize', fitStage, { passive: true });
-    window.addEventListener('orientationchange', fitStage);
+    let fitStageRaf = 0;
+    const scheduleFitStage = () => {
+      if (fitStageRaf) return;
+      fitStageRaf = requestAnimationFrame(() => {
+        fitStageRaf = 0;
+        fitStage();
+      });
+    };
+
+    scheduleFitStage();
+    window.addEventListener('resize', scheduleFitStage, { passive: true });
+    window.addEventListener('orientationchange', scheduleFitStage, { passive: true });
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', fitStage, { passive: true });
-      window.visualViewport.addEventListener('scroll', fitStage, { passive: true });
+      window.visualViewport.addEventListener('resize', scheduleFitStage, { passive: true });
+      window.visualViewport.addEventListener('scroll', scheduleFitStage, { passive: true });
     }
 
     // Start Game Flow
@@ -119,17 +128,17 @@
           introSplash.style.opacity = '0';
           setTimeout(() => {
             introSplash.remove();
-            fitStage();
-            setTimeout(fitStage, 100);
+            scheduleFitStage();
+            setTimeout(scheduleFitStage, 100);
             startGame();
           }, 500);
         } else {
-          fitStage();
+          scheduleFitStage();
           startGame();
         }
       });
     } else {
-      fitStage();
+      scheduleFitStage();
       startGame();
     }
 
@@ -239,6 +248,20 @@
     };
 
     const TYPES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+    const backgroundLayer = document.createElement('canvas');
+    const backgroundCtx = backgroundLayer.getContext('2d');
+    backgroundLayer.width = canvas.width;
+    backgroundLayer.height = canvas.height;
+    const hudEls = {
+      score: document.getElementById('score'),
+      lines: document.getElementById('lines'),
+      level: document.getElementById('level'),
+      high: document.getElementById('highScore'),
+      bombs: document.getElementById('bombs'),
+      power: document.getElementById('powerBar'),
+      bombBtn: document.getElementById('bombBtn'),
+      speedBtn: document.getElementById('speedBtn')
+    };
 
     // Game State
     let state = {
@@ -269,10 +292,44 @@
     state.settings.ghost = getStoredBoolean('ghost', true);
     state.settings.sound = getStoredBoolean('sound', true);
     state.settings.grid = getStoredBoolean('grid', true);
+    buildBackgroundLayer();
 
     let audioCtx = null;
     let gameOverSfxPlayed = false;
     let lastMoveSfxAt = 0;
+    let lineFlash = 0;
+    const hudPrev = { score: null, lines: null, level: null, high: null, bombs: null };
+
+    function buildBackgroundLayer() {
+      if (!backgroundCtx) return;
+      backgroundCtx.fillStyle = '#0f0f12';
+      backgroundCtx.fillRect(0, 0, backgroundLayer.width, backgroundLayer.height);
+
+      if (state.settings.grid) {
+        backgroundCtx.strokeStyle = 'rgba(255,255,255,0.03)';
+        backgroundCtx.lineWidth = 1;
+        for (let x = 0; x <= COLS; x++) {
+          backgroundCtx.beginPath();
+          backgroundCtx.moveTo(x * BLOCK_SIZE, 0);
+          backgroundCtx.lineTo(x * BLOCK_SIZE, ROWS * BLOCK_SIZE);
+          backgroundCtx.stroke();
+        }
+        for (let y = 0; y <= ROWS; y++) {
+          backgroundCtx.beginPath();
+          backgroundCtx.moveTo(0, y * BLOCK_SIZE);
+          backgroundCtx.lineTo(COLS * BLOCK_SIZE, y * BLOCK_SIZE);
+          backgroundCtx.stroke();
+        }
+      }
+    }
+
+    function haptic(pattern) {
+      try {
+        if (navigator.vibrate) navigator.vibrate(pattern);
+      } catch (_) {
+        // Ignore unsupported vibration APIs.
+      }
+    }
 
     function ensureAudioContext() {
       if (!AudioCtx) return null;
@@ -332,11 +389,13 @@
         case 'hardDrop':
           playTone(220, 0.04, 'square', 0.018);
           playTone(110, 0.09, 'sawtooth', 0.015, 0.03);
+          haptic(12);
           break;
         case 'lineClear': {
           const lines = Math.max(1, Math.min(4, Number(data) || 1));
           const seq = [440, 554, 659, 880].slice(0, lines);
           seq.forEach((freq, i) => playTone(freq, 0.07, 'triangle', 0.02, i * 0.035));
+          haptic(lines >= 4 ? [16, 30, 24] : 16);
           break;
         }
         case 'hold':
@@ -345,6 +404,7 @@
         case 'bomb':
           playTone(95, 0.16, 'sawtooth', 0.03);
           playTone(70, 0.2, 'triangle', 0.02, 0.03);
+          haptic([18, 20, 18]);
           break;
         case 'pause':
           playTone(380, 0.05, 'square', 0.015);
@@ -422,6 +482,7 @@
       state.settings[key] = !!value;
       setStoredBoolean(key, state.settings[key]);
       if (state.settings.sound) ensureAudioContext();
+      if (key === 'grid') buildBackgroundLayer();
       render();
     };
 
@@ -537,6 +598,7 @@
           state.dropInterval = Math.max(100, 1000 - (state.level - 1) * 100);
         }
 
+        lineFlash = Math.min(0.42, 0.14 * linesCleared);
         playSfx('lineClear', linesCleared);
         updateHUD();
       }
@@ -660,21 +722,8 @@
     }
 
     function render() {
-      // Clear canvas
-      ctx.fillStyle = '#0f0f12';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Grid (subtle)
-      if (state.settings.grid) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-        ctx.lineWidth = 1;
-        for (let x = 0; x <= COLS; x++) {
-          ctx.beginPath(); ctx.moveTo(x * BLOCK_SIZE, 0); ctx.lineTo(x * BLOCK_SIZE, ROWS * BLOCK_SIZE); ctx.stroke();
-        }
-        for (let y = 0; y <= ROWS; y++) {
-          ctx.beginPath(); ctx.moveTo(0, y * BLOCK_SIZE); ctx.lineTo(COLS * BLOCK_SIZE, y * BLOCK_SIZE); ctx.stroke();
-        }
-      }
+      // Draw cached board background (base + optional grid)
+      ctx.drawImage(backgroundLayer, 0, 0);
 
       // Placed blocks
       for (let row = 0; row < ROWS; row++) {
@@ -727,6 +776,12 @@
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
+
+      if (lineFlash > 0) {
+        ctx.fillStyle = `rgba(0, 234, 255, ${lineFlash})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        lineFlash = Math.max(0, lineFlash - 0.025);
+      }
     }
 
     function renderHold() {
@@ -777,24 +832,26 @@
     }
 
     function updateHUD() {
-      const elScore = document.getElementById('score');
-      const elLines = document.getElementById('lines');
-      const elLevel = document.getElementById('level');
-      const elHigh = document.getElementById('highScore');
-      const elBombs = document.getElementById('bombs');
-      const elPower = document.getElementById('powerBar');
-      const btnBomb = document.getElementById('bombBtn');
-      const btnSpeed = document.getElementById('speedBtn');
+      const setValue = (el, key, value) => {
+        if (!el) return;
+        if (hudPrev[key] !== value) {
+          el.textContent = value;
+          el.classList.remove('bump');
+          void el.offsetWidth;
+          el.classList.add('bump');
+          hudPrev[key] = value;
+        }
+      };
 
-      if (elScore) elScore.textContent = state.score;
-      if (elLines) elLines.textContent = state.lines;
-      if (elLevel) elLevel.textContent = state.level;
-      if (elHigh) elHigh.textContent = state.highScore;
-      if (elBombs) elBombs.textContent = state.bombs;
-      if (elPower) elPower.style.width = `${state.power}%`;
+      setValue(hudEls.score, 'score', state.score);
+      setValue(hudEls.lines, 'lines', state.lines);
+      setValue(hudEls.level, 'level', state.level);
+      setValue(hudEls.high, 'high', state.highScore);
+      setValue(hudEls.bombs, 'bombs', state.bombs);
 
-      if (btnBomb) btnBomb.disabled = state.bombs <= 0;
-      if (btnSpeed) btnSpeed.textContent = `Speed: ${state.speedMultiplier}x`;
+      if (hudEls.power) hudEls.power.style.width = `${state.power}%`;
+      if (hudEls.bombBtn) hudEls.bombBtn.disabled = state.bombs <= 0;
+      if (hudEls.speedBtn) hudEls.speedBtn.textContent = `Speed: ${state.speedMultiplier}x`;
     }
 
     // Input handling

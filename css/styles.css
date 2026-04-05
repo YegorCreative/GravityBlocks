@@ -179,6 +179,25 @@ canvas#gameBoard {
   font-family: var(--pixel-font);
 }
 
+.value.bump {
+  animation: hudValueBump 220ms ease;
+}
+
+@keyframes hudValueBump {
+  0% {
+    transform: scale(1);
+    text-shadow: 0 0 0 rgba(0, 234, 255, 0);
+  }
+  40% {
+    transform: scale(1.12);
+    text-shadow: 0 0 12px rgba(0, 234, 255, 0.45);
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: 0 0 0 rgba(0, 234, 255, 0);
+  }
+}
+
 /* Mini panels (Hold / Next) */
 .mini-panels {
   display: flex;
