@@ -1699,3 +1699,105 @@ canvas#gameBoard {
     font-size: clamp(28px, 10vw, 58px);
   }
 }
+
+@media (max-width: 430px) and (max-height: 760px) and (orientation: portrait) {
+  header {
+    padding: 10px 12px 6px;
+  }
+
+  .game-wrapper {
+    padding: 6px 10px calc(152px + env(safe-area-inset-bottom));
+    gap: 8px;
+  }
+
+  .top-hud {
+    gap: 8px;
+  }
+
+  .top-hud .hud-top {
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  .top-hud .hud-item {
+    min-height: 50px;
+  }
+
+  .top-hud .hud-item .value {
+    font-size: 14px;
+  }
+
+  #stage {
+    border-width: 8px;
+    border-radius: 14px;
+  }
+
+  .preview-strip {
+    gap: 8px;
+  }
+
+  .preview-panel {
+    min-height: 82px;
+    padding: 7px;
+    border-radius: 14px;
+  }
+
+  .preview-panel .next-queue {
+    min-height: 50px;
+  }
+
+  .secondary-actions {
+    gap: 8px;
+  }
+
+  .secondary-actions .stat {
+    min-height: 68px;
+    padding: 9px 10px;
+    border-radius: 14px;
+  }
+
+  .secondary-actions .stat .value {
+    font-size: 14px;
+  }
+
+  .power {
+    margin-top: 8px;
+  }
+
+  .power-meta {
+    margin-top: 8px;
+  }
+
+  .hud-actions {
+    gap: 7px;
+  }
+
+  .hud-actions button,
+  #pauseBtn,
+  #settingsBtn,
+  #speedBtn,
+  #restartBtn,
+  #bombBtn {
+    min-height: 42px;
+    padding: 10px 8px;
+    font-size: 9px;
+  }
+
+  .mobile-controls {
+    bottom: calc(4px + env(safe-area-inset-bottom));
+    width: min(640px, calc(100% - 10px));
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    border-radius: 18px;
+  }
+
+  .mobile-controls .grid {
+    gap: 7px;
+  }
+
+  .btn {
+    min-height: 46px;
+    padding: 11px 8px;
+    font-size: 12px;
+    border-radius: 12px;
+  }
+}
