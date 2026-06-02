@@ -424,7 +424,7 @@
 
     ControlsUIPlatform.bindGameControls({
       ensureAudioContext: audio.ensureAudioContext,
-      allowKeyboard: false,
+      allowKeyboard: true,
       getState: () => state,
       actions: {
         move,
