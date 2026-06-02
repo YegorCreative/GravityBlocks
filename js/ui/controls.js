@@ -3,51 +3,54 @@
 
   function bindGameControls(options) {
     const ensureAudioContext = options.ensureAudioContext;
+    const allowKeyboard = options.allowKeyboard === true;
     const getState = options.getState;
     const actions = options.actions;
 
     window.addEventListener('pointerdown', ensureAudioContext, { once: true });
 
-    document.addEventListener('keydown', (e) => {
-      ensureAudioContext();
-      const state = getState();
-      if (!state.running || state.paused) return;
+    if (allowKeyboard) {
+      document.addEventListener('keydown', (e) => {
+        ensureAudioContext();
+        const state = getState();
+        if (!state.running || state.paused) return;
 
-      switch (e.key) {
-        case 'ArrowLeft':
-          e.preventDefault();
-          actions.move(-1, 0);
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          actions.move(1, 0);
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          actions.drop();
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          actions.rotate();
-          break;
-        case ' ':
-          e.preventDefault();
-          actions.hardDrop();
-          break;
-        case 'c':
-        case 'C':
-        case 'Shift':
-          e.preventDefault();
-          actions.holdPiece();
-          break;
-        case 'p':
-        case 'P':
-          actions.togglePause();
-          break;
-      }
+        switch (e.key) {
+          case 'ArrowLeft':
+            e.preventDefault();
+            actions.move(-1, 0);
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            actions.move(1, 0);
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            actions.drop();
+            break;
+          case 'ArrowUp':
+            e.preventDefault();
+            actions.rotate();
+            break;
+          case ' ':
+            e.preventDefault();
+            actions.hardDrop();
+            break;
+          case 'c':
+          case 'C':
+          case 'Shift':
+            e.preventDefault();
+            actions.holdPiece();
+            break;
+          case 'p':
+          case 'P':
+            actions.togglePause();
+            break;
+        }
 
-      actions.render();
-    });
+        actions.render();
+      });
+    }
 
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');

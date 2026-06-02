@@ -5,6 +5,7 @@
   'use strict';
 
   const Storage = window.GravityBlocksStorage;
+  const MobileOnlyPlatform = window.GravityBlocksMobileOnly;
   const Viewport = window.GravityBlocksViewport;
   const AudioPlatform = window.GravityBlocksAudio;
   const HUDPlatform = window.GravityBlocksHUD;
@@ -15,7 +16,7 @@
   const PiecesCorePlatform = window.GravityBlocksPiecesCore;
   const ScoringCorePlatform = window.GravityBlocksScoringCore;
 
-  if (!Storage || !Viewport || !AudioPlatform || !HUDPlatform || !SettingsUIPlatform || !ControlsUIPlatform || !BoardRendererPlatform || !PreviewsRendererPlatform || !PiecesCorePlatform || !ScoringCorePlatform) {
+  if (!Storage || !MobileOnlyPlatform || !Viewport || !AudioPlatform || !HUDPlatform || !SettingsUIPlatform || !ControlsUIPlatform || !BoardRendererPlatform || !PreviewsRendererPlatform || !PiecesCorePlatform || !ScoringCorePlatform) {
     console.error('GravityBlocks platform modules are missing.');
     return;
   }
@@ -34,6 +35,9 @@
   }
 
   function init() {
+    const mobileSupported = MobileOnlyPlatform.initMobileOnlyGate();
+    if (!mobileSupported) return;
+
     const introSplash = document.getElementById('introSplash');
     const playBtn = document.getElementById('playBtn');
     const fallingBlocks = document.getElementById('fallingBlocks');
@@ -420,6 +424,7 @@
 
     ControlsUIPlatform.bindGameControls({
       ensureAudioContext: audio.ensureAudioContext,
+      allowKeyboard: false,
       getState: () => state,
       actions: {
         move,
