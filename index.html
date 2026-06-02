@@ -63,40 +63,47 @@
   </header>
 
   <main class="game-wrapper">
-    <div class="board">
-      <div id="stage" aria-label="Scaled stage">
-        <div class="stage-ui" aria-hidden="false">
-          <div class="hud-top">
-            <div class="hud-item">
-              <span class="label">SCORE</span>
-              <span class="value" id="score">0</span>
-            </div>
-            <div class="hud-item">
-              <span class="label">LEVEL</span>
-              <span class="value" id="level">1</span>
-            </div>
-            <div class="hud-item">
-              <span class="label">LINES</span>
-              <span class="value" id="lines">0</span>
-            </div>
-          </div>
-          <div class="hud-side left">
-            <div class="side-panel">
-              <span class="label">HOLD</span>
-              <canvas id="holdCanvas" width="64" height="64" aria-label="Hold piece preview"></canvas>
-            </div>
-          </div>
-          <div class="hud-side right">
-            <div class="side-panel">
-              <span class="label">NEXT</span>
-              <div id="nextQueue" class="next-queue" aria-label="Upcoming pieces"></div>
-            </div>
-          </div>
-        </div>
-        <canvas id="gameBoard" aria-label="GravityBlocks canvas"></canvas>
+    <section class="top-hud" aria-label="Game status">
+      <div class="brand-compact" aria-label="Game brand">
+        <span class="brand-mark">GB</span>
+        <span class="brand-name">GravityBlocks</span>
       </div>
-    </div>
-    <aside class="hud">
+      <div class="hud-top" aria-label="Scoreboard">
+        <div class="hud-item">
+          <span class="label">SCORE</span>
+          <span class="value" id="score">0</span>
+        </div>
+        <div class="hud-item">
+          <span class="label">LEVEL</span>
+          <span class="value" id="level">1</span>
+        </div>
+        <div class="hud-item">
+          <span class="label">LINES</span>
+          <span class="value" id="lines">0</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="board-shell" aria-label="Game board">
+      <div class="board">
+        <div id="stage" aria-label="Scaled stage">
+          <canvas id="gameBoard" aria-label="GravityBlocks canvas"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="preview-strip" aria-label="Piece previews">
+      <div class="side-panel preview-panel hold-panel">
+        <span class="label">HOLD</span>
+        <canvas id="holdCanvas" width="64" height="64" aria-label="Hold piece preview"></canvas>
+      </div>
+      <div class="side-panel preview-panel next-panel">
+        <span class="label">NEXT</span>
+        <div id="nextQueue" class="next-queue" aria-label="Upcoming pieces"></div>
+      </div>
+    </section>
+
+    <aside class="hud secondary-actions" aria-label="Secondary actions">
       <div class="stat">
         <span class="label">High Score</span>
         <span class="value" id="highScore">0</span>
@@ -111,11 +118,13 @@
           <span class="value" id="bombs">0</span>
         </div>
       </div>
-      <button id="bombBtn" type="button" aria-label="Use Bomb">Bomb Row</button>
-      <button id="pauseBtn" type="button">Pause</button>
-      <button id="settingsBtn" type="button">Settings</button>
-      <button id="speedBtn" type="button">Speed: 1x</button>
-      <button id="restartBtn" type="button">Restart</button>
+      <div class="hud-actions" aria-label="Game actions">
+        <button id="bombBtn" type="button" aria-label="Use Bomb">Bomb Row</button>
+        <button id="pauseBtn" type="button">Pause</button>
+        <button id="settingsBtn" type="button">Settings</button>
+        <button id="speedBtn" type="button">Speed: 1x</button>
+        <button id="restartBtn" type="button">Restart</button>
+      </div>
     </aside>
   </main>
 
