@@ -57,19 +57,27 @@
     const btnRotate = document.getElementById('btn-rotate');
     const btnSoft = document.getElementById('btn-soft');
     const btnHard = document.getElementById('btn-hard');
+    const btnHold = document.getElementById('btn-hold');
     const btnBombMobile = document.getElementById('btn-bomb');
 
-    function addHold(btn, fn, interval) {
+    function bindPointerButton(btn, fn, interval) {
       if (!btn) return;
       let t = null;
+      let suppressClick = false;
       const tick = fn || (() => { });
       const delay = interval || 100;
 
       const start = (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
         e.preventDefault();
+        suppressClick = true;
+        if (btn.setPointerCapture && e.pointerId !== undefined) {
+          try { btn.setPointerCapture(e.pointerId); } catch (error) { /* ignore */ }
+        }
         tick();
         actions.render();
         if (t) clearInterval(t);
+        if (!interval) return;
         t = setInterval(() => {
           tick();
           actions.render();
@@ -81,29 +89,39 @@
           clearInterval(t);
           t = null;
         }
+        window.setTimeout(() => {
+          suppressClick = false;
+        }, 0);
       };
 
       btn.addEventListener('pointerdown', start);
-      window.addEventListener('pointerup', stop);
-      window.addEventListener('pointercancel', stop);
-      btn.addEventListener('click', (e) => e.preventDefault());
+      btn.addEventListener('pointerup', stop);
+      btn.addEventListener('pointercancel', stop);
+      btn.addEventListener('lostpointercapture', stop);
+      btn.addEventListener('click', (e) => {
+        if (suppressClick) {
+          e.preventDefault();
+          suppressClick = false;
+          return;
+        }
+
+        if (e.detail === 0) {
+          tick();
+          actions.render();
+        }
+      });
     }
 
-    addHold(btnLeft, () => actions.move(-1, 0), 100);
-    addHold(btnRight, () => actions.move(1, 0), 100);
-    addHold(btnSoft, () => actions.drop(), 100);
+    bindPointerButton(btnLeft, () => actions.move(-1, 0), 100);
+    bindPointerButton(btnRight, () => actions.move(1, 0), 100);
+    bindPointerButton(btnSoft, () => actions.drop(), 100);
+    bindPointerButton(btnRotate, () => actions.rotate(), 0);
+    bindPointerButton(btnHard, () => actions.hardDrop(), 0);
+    bindPointerButton(btnHold, () => actions.holdPiece(), 0);
 
-    if (btnRotate) btnRotate.addEventListener('click', () => {
-      actions.rotate();
-      actions.render();
-    });
-
-    if (btnHard) btnHard.addEventListener('click', () => {
-      actions.hardDrop();
-      actions.render();
-    });
-
-    if (btnBombMobile) btnBombMobile.addEventListener('click', () => actions.useBomb());
+    if (btnBombMobile) {
+      btnBombMobile.addEventListener('click', () => actions.useBomb());
+    }
   }
 
   window.GravityBlocksControlsUI = {
